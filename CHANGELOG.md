@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.2] - 2025-12-11
+
+### Added
+- Playwright for automated testing
+- Verified full end-to-end flow working:
+  - Terminal session creation
+  - Command execution
+  - Claude API summarization
+  - TTS playback controls
+  - Session history persistence
+
 ## [0.1.1] - 2025-12-11
 
 ### Added
