@@ -124,14 +124,14 @@ export function QuickCommands({ onCommand }: QuickCommandsProps) {
 
   return (
     <div className="bg-gray-800 rounded-lg p-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         {/* Quick buttons */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
           {QUICK_BUTTONS.map((btn) => (
             <button
               key={btn.label}
               onClick={() => executeCommand(btn.command)}
-              className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs transition-colors flex items-center gap-1"
+              className="px-3 py-2 sm:px-2 sm:py-1 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-gray-300 rounded text-sm sm:text-xs transition-colors flex items-center gap-1 whitespace-nowrap touch-manipulation"
               title={btn.command}
             >
               <span>{btn.icon}</span>
@@ -141,33 +141,41 @@ export function QuickCommands({ onCommand }: QuickCommandsProps) {
         </div>
 
         {/* Command input with autocomplete */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative flex gap-2">
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            onFocus={() => input.length > 0 && setSuggestions.length > 0 && setShowSuggestions(true)}
-            placeholder="Type command or / for Claude commands..."
-            className="w-full px-3 py-1.5 bg-gray-900 text-white rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            onFocus={() => input.length > 0 && suggestions.length > 0 && setShowSuggestions(true)}
+            placeholder="Type command or /..."
+            className="flex-1 px-3 py-2 sm:py-1.5 bg-gray-900 text-white rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
+
+          <button
+            onClick={() => input.trim() && executeCommand(input.trim())}
+            disabled={!input.trim()}
+            className="px-4 py-2 sm:px-3 sm:py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-600 text-white rounded text-sm transition-colors touch-manipulation"
+          >
+            Run
+          </button>
 
           {/* Autocomplete dropdown */}
           {showSuggestions && (
-            <div className="absolute bottom-full left-0 right-0 mb-1 bg-gray-900 border border-gray-700 rounded-lg shadow-lg overflow-hidden z-10">
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-gray-900 border border-gray-700 rounded-lg shadow-lg overflow-hidden z-10 max-h-48 overflow-y-auto">
               {suggestions.map((suggestion, idx) => (
                 <button
                   key={suggestion.cmd}
                   onClick={() => executeCommand(suggestion.cmd)}
-                  className={`w-full px-3 py-2 text-left text-sm flex items-center justify-between transition-colors ${
-                    idx === selectedIndex ? 'bg-gray-700' : 'hover:bg-gray-800'
+                  className={`w-full px-3 py-3 sm:py-2 text-left text-sm flex items-center justify-between transition-colors touch-manipulation ${
+                    idx === selectedIndex ? 'bg-gray-700' : 'hover:bg-gray-800 active:bg-gray-700'
                   }`}
                 >
                   <span className={`font-mono ${getCategoryColor(suggestion.category)}`}>
                     {suggestion.cmd}
                   </span>
-                  <span className="text-gray-500 text-xs truncate ml-2">
+                  <span className="text-gray-500 text-xs truncate ml-2 hidden sm:inline">
                     {suggestion.desc}
                   </span>
                 </button>
@@ -175,14 +183,6 @@ export function QuickCommands({ onCommand }: QuickCommandsProps) {
             </div>
           )}
         </div>
-
-        <button
-          onClick={() => input.trim() && executeCommand(input.trim())}
-          disabled={!input.trim()}
-          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded text-sm transition-colors"
-        >
-          Run
-        </button>
       </div>
     </div>
   );

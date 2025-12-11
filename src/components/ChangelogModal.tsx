@@ -3,9 +3,19 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.1.6';
+const APP_VERSION = '0.1.7';
 
 const changelog = [
+  {
+    version: '0.1.7',
+    date: '2025-12-11',
+    changes: [
+      'Responsive mobile layout with tabbed navigation',
+      'Touch-optimized buttons and larger tap targets',
+      'Stacked layout on screens under 1024px',
+      'Improved spacing and typography for mobile',
+    ],
+  },
   {
     version: '0.1.6',
     date: '2025-12-11',

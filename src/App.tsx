@@ -54,6 +54,15 @@ function App() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [mobileTab, setMobileTab] = useState<'terminal' | 'controls' | 'history'>('terminal');
+
+  // Handle responsive breakpoint
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Check API status on mount
   useEffect(() => {
@@ -149,91 +158,173 @@ function App() {
     setSummaryLevel(null);
   }, [endSession]);
 
+  // Mobile tab navigation
+  const MobileNav = () => (
+    <div className="flex gap-1 mb-3 bg-gray-800 p-1 rounded-lg">
+      {[
+        { id: 'terminal', label: 'Terminal', icon: '💻' },
+        { id: 'controls', label: 'Controls', icon: '⚙️' },
+        { id: 'history', label: 'History', icon: '📜' },
+      ].map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setMobileTab(tab.id as typeof mobileTab)}
+          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+            mobileTab === tab.id
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-400 hover:text-white hover:bg-gray-700'
+          }`}
+        >
+          <span className="mr-1">{tab.icon}</span>
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Claude Code Narrator</h1>
-        <p className="text-gray-400 text-sm">
+    <div className="min-h-screen bg-gray-900 text-white p-2 sm:p-4">
+      <header className="mb-3 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Claude Code Narrator</h1>
+        <p className="text-gray-400 text-xs sm:text-sm">
           Terminal session capture with AI-powered narration
         </p>
         {apiAvailable === false && (
-          <p className="text-yellow-500 text-sm mt-1">
+          <p className="text-yellow-500 text-xs sm:text-sm mt-1">
             No ANTHROPIC_API_KEY detected - using mock summaries
           </p>
         )}
       </header>
 
-      <PanelGroup direction="horizontal" className="h-[calc(100vh-180px)]">
-        {/* Main terminal area */}
-        <Panel defaultSize={75} minSize={40}>
-          <PanelGroup direction="vertical">
-            <Panel defaultSize={65} minSize={20}>
-              <div className="h-full pr-2 pb-1 flex flex-col gap-2">
-                <div className="flex-1 min-h-0">
+      {/* Mobile Layout */}
+      {isMobile ? (
+        <div className="h-[calc(100vh-160px)]">
+          <MobileNav />
+          <div className="h-[calc(100%-52px)] overflow-auto">
+            {mobileTab === 'terminal' && (
+              <div className="h-full flex flex-col gap-2">
+                <div className="flex-1 min-h-[200px]">
                   <Terminal terminalRef={terminalRef} />
                 </div>
                 {sessionId && <QuickCommands onCommand={sendCommand} />}
+                <div className="mt-2">
+                  <NarrationPanel
+                    summary={currentSummary}
+                    summaryLevel={summaryLevel}
+                    isSpeaking={isSpeaking}
+                    isPaused={isPaused}
+                    onSpeak={handleSpeak}
+                    onStop={stop}
+                    onPause={pause}
+                    onResume={resume}
+                  />
+                </div>
               </div>
-            </Panel>
-
-            <PanelResizeHandle className="h-2 flex items-center justify-center group cursor-row-resize">
-              <div className="w-16 h-1 rounded-full bg-gray-700 group-hover:bg-blue-500 transition-colors" />
-            </PanelResizeHandle>
-
-            <Panel defaultSize={35} minSize={15}>
-              <div className="h-full pr-2 pt-1 overflow-auto">
-                <NarrationPanel
-                  summary={currentSummary}
-                  summaryLevel={summaryLevel}
-                  isSpeaking={isSpeaking}
-                  isPaused={isPaused}
-                  onSpeak={handleSpeak}
-                  onStop={stop}
-                  onPause={pause}
-                  onResume={resume}
-                />
-              </div>
-            </Panel>
-          </PanelGroup>
-        </Panel>
-
-        <PanelResizeHandle className="w-2 flex items-center justify-center group cursor-col-resize">
-          <div className="h-16 w-1 rounded-full bg-gray-700 group-hover:bg-blue-500 transition-colors" />
-        </PanelResizeHandle>
-
-        {/* Sidebar */}
-        <Panel defaultSize={25} minSize={15} maxSize={40}>
-          <div className="h-full pl-2 flex flex-col gap-4 overflow-y-auto">
-            <Controls
-              isConnected={isConnected}
-              sessionId={sessionId}
-              sessionType={sessionType}
-              sshHost={sshHost}
-              onStartSession={startSession}
-              onStartSSHSession={startSSHSession}
-              onEndSession={handleEndSession}
-              onSummarize={handleSummarize}
-              detailLevel={detailLevel}
-              onDetailLevelChange={setDetailLevel}
-              ttsSettings={ttsSettings}
-              onTTSSettingsChange={updateTTSSettings}
-              voices={voices}
-              isSummarizing={isSummarizing}
-            />
-            <TranscriptList
-              sessions={sessions}
-              loading={sessionsLoading}
-              onRefresh={refreshSessions}
-              onSelect={handleSelectSession}
-              onDelete={deleteSession}
-              selectedId={selectedSession?.id ?? null}
-            />
+            )}
+            {mobileTab === 'controls' && (
+              <Controls
+                isConnected={isConnected}
+                sessionId={sessionId}
+                sessionType={sessionType}
+                sshHost={sshHost}
+                onStartSession={startSession}
+                onStartSSHSession={startSSHSession}
+                onEndSession={handleEndSession}
+                onSummarize={handleSummarize}
+                detailLevel={detailLevel}
+                onDetailLevelChange={setDetailLevel}
+                ttsSettings={ttsSettings}
+                onTTSSettingsChange={updateTTSSettings}
+                voices={voices}
+                isSummarizing={isSummarizing}
+              />
+            )}
+            {mobileTab === 'history' && (
+              <TranscriptList
+                sessions={sessions}
+                loading={sessionsLoading}
+                onRefresh={refreshSessions}
+                onSelect={handleSelectSession}
+                onDelete={deleteSession}
+                selectedId={selectedSession?.id ?? null}
+              />
+            )}
           </div>
-        </Panel>
-      </PanelGroup>
+        </div>
+      ) : (
+        /* Desktop Layout */
+        <PanelGroup direction="horizontal" className="h-[calc(100vh-180px)]">
+          {/* Main terminal area */}
+          <Panel defaultSize={75} minSize={40}>
+            <PanelGroup direction="vertical">
+              <Panel defaultSize={65} minSize={20}>
+                <div className="h-full pr-2 pb-1 flex flex-col gap-2">
+                  <div className="flex-1 min-h-0">
+                    <Terminal terminalRef={terminalRef} />
+                  </div>
+                  {sessionId && <QuickCommands onCommand={sendCommand} />}
+                </div>
+              </Panel>
+
+              <PanelResizeHandle className="h-2 flex items-center justify-center group cursor-row-resize">
+                <div className="w-16 h-1 rounded-full bg-gray-700 group-hover:bg-blue-500 transition-colors" />
+              </PanelResizeHandle>
+
+              <Panel defaultSize={35} minSize={15}>
+                <div className="h-full pr-2 pt-1 overflow-auto">
+                  <NarrationPanel
+                    summary={currentSummary}
+                    summaryLevel={summaryLevel}
+                    isSpeaking={isSpeaking}
+                    isPaused={isPaused}
+                    onSpeak={handleSpeak}
+                    onStop={stop}
+                    onPause={pause}
+                    onResume={resume}
+                  />
+                </div>
+              </Panel>
+            </PanelGroup>
+          </Panel>
+
+          <PanelResizeHandle className="w-2 flex items-center justify-center group cursor-col-resize">
+            <div className="h-16 w-1 rounded-full bg-gray-700 group-hover:bg-blue-500 transition-colors" />
+          </PanelResizeHandle>
+
+          {/* Sidebar */}
+          <Panel defaultSize={25} minSize={15} maxSize={40}>
+            <div className="h-full pl-2 flex flex-col gap-4 overflow-y-auto">
+              <Controls
+                isConnected={isConnected}
+                sessionId={sessionId}
+                sessionType={sessionType}
+                sshHost={sshHost}
+                onStartSession={startSession}
+                onStartSSHSession={startSSHSession}
+                onEndSession={handleEndSession}
+                onSummarize={handleSummarize}
+                detailLevel={detailLevel}
+                onDetailLevelChange={setDetailLevel}
+                ttsSettings={ttsSettings}
+                onTTSSettingsChange={updateTTSSettings}
+                voices={voices}
+                isSummarizing={isSummarizing}
+              />
+              <TranscriptList
+                sessions={sessions}
+                loading={sessionsLoading}
+                onRefresh={refreshSessions}
+                onSelect={handleSelectSession}
+                onDelete={deleteSession}
+                selectedId={selectedSession?.id ?? null}
+              />
+            </div>
+          </Panel>
+        </PanelGroup>
+      )}
 
       {/* Footer */}
-      <footer className="mt-4 py-3 border-t border-gray-800">
+      <footer className="mt-2 sm:mt-4 py-2 sm:py-3 border-t border-gray-800">
         <div className="flex items-center justify-between text-xs text-gray-500">
           <button
             onClick={() => setShowChangelog(true)}
@@ -241,7 +332,7 @@ function App() {
           >
             v{APP_VERSION}
           </button>
-          <div className="text-center">
+          <div className="text-center hidden sm:block">
             Powered by{' '}
             <span className="text-blue-400 font-medium">Ecoworks Web Architecture</span>
           </div>

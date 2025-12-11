@@ -14,6 +14,15 @@
 
 ---
 
+## [0.1.7] - 2025-12-11
+
+### Added
+- **Responsive Mobile Layout**: Tabbed navigation for screens under 1024px
+  - Terminal, Controls, and History tabs
+  - Touch-optimized buttons with larger tap targets
+  - Stacked vertical layout for better mobile UX
+- Improved spacing and typography for all screen sizes
+
 ## [0.1.6] - 2025-12-11
 
 ### Added
