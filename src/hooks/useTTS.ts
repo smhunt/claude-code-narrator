@@ -32,6 +32,7 @@ export function useTTS(): UseTTSReturn {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [settings, setSettings] = useState<TTSSettings>(DEFAULT_SETTINGS);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const currentTextRef = useRef<string>('');
 
   useEffect(() => {
     const loadVoices = () => {
@@ -55,18 +56,18 @@ export function useTTS(): UseTTSReturn {
     };
   }, []);
 
-  const speak = useCallback(
-    (text: string) => {
+  const speakWithSettings = useCallback(
+    (text: string, currentSettings: TTSSettings) => {
       // Stop any current speech
       speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = settings.rate;
-      utterance.pitch = settings.pitch;
-      utterance.volume = settings.volume;
+      utterance.rate = currentSettings.rate;
+      utterance.pitch = currentSettings.pitch;
+      utterance.volume = currentSettings.volume;
 
-      if (voices[settings.voiceIndex]) {
-        utterance.voice = voices[settings.voiceIndex];
+      if (voices[currentSettings.voiceIndex]) {
+        utterance.voice = voices[currentSettings.voiceIndex];
       }
 
       utterance.onstart = () => {
@@ -77,6 +78,7 @@ export function useTTS(): UseTTSReturn {
       utterance.onend = () => {
         setIsSpeaking(false);
         setIsPaused(false);
+        currentTextRef.current = '';
       };
 
       utterance.onerror = () => {
@@ -85,13 +87,30 @@ export function useTTS(): UseTTSReturn {
       };
 
       utteranceRef.current = utterance;
+      currentTextRef.current = text;
       speechSynthesis.speak(utterance);
     },
-    [settings, voices]
+    [voices]
   );
+
+  const speak = useCallback(
+    (text: string) => {
+      speakWithSettings(text, settings);
+    },
+    [settings, speakWithSettings]
+  );
+
+  // Re-apply settings in real-time when they change during speech
+  useEffect(() => {
+    if (isSpeaking && currentTextRef.current && !isPaused) {
+      // Restart speech with new settings
+      speakWithSettings(currentTextRef.current, settings);
+    }
+  }, [settings, isSpeaking, isPaused, speakWithSettings]);
 
   const stop = useCallback(() => {
     speechSynthesis.cancel();
+    currentTextRef.current = '';
     setIsSpeaking(false);
     setIsPaused(false);
   }, []);

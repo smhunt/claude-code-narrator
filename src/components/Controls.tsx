@@ -224,6 +224,21 @@ export function Controls({
             className="w-full"
           />
         </div>
+
+        <div className="space-y-2">
+          <label className="block text-xs text-gray-400">
+            Volume: {Math.round(ttsSettings.volume * 100)}%
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={ttsSettings.volume}
+            onChange={(e) => onTTSSettingsChange({ volume: Number(e.target.value) })}
+            className="w-full"
+          />
+        </div>
       </div>
     </div>
   );
