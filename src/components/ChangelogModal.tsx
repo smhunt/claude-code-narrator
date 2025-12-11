@@ -3,9 +3,20 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.1.5';
+const APP_VERSION = '0.1.6';
 
 const changelog = [
+  {
+    version: '0.1.6',
+    date: '2025-12-11',
+    changes: [
+      'Quick command bar with autocomplete below terminal',
+      'Common commands: ls, pwd, clear, exit buttons',
+      'Claude Code slash commands (/help, /status, etc.)',
+      'Volume control slider for TTS',
+      'Real-time voice settings (restarts with new settings)',
+    ],
+  },
   {
     version: '0.1.5',
     date: '2025-12-11',

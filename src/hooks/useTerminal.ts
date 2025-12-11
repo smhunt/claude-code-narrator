@@ -19,6 +19,7 @@ export interface UseTerminalReturn {
   startSSHSession: (config: SSHConfig) => Promise<void>;
   endSession: () => void;
   requestSummary: (level: 'high' | 'medium' | 'detailed') => void;
+  sendCommand: (command: string) => void;
 }
 
 export function useTerminal(): UseTerminalReturn {
@@ -138,6 +139,12 @@ export function useTerminal(): UseTerminalReturn {
     socket.emit('summarize', { level });
   }, []);
 
+  const sendCommand = useCallback((command: string) => {
+    if (sessionId) {
+      socket.emit('terminal:input', { data: command });
+    }
+  }, [sessionId]);
+
   return {
     terminalRef,
     isConnected,
@@ -148,5 +155,6 @@ export function useTerminal(): UseTerminalReturn {
     startSSHSession,
     endSession,
     requestSummary,
+    sendCommand,
   };
 }

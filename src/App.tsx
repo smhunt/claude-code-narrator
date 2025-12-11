@@ -4,6 +4,7 @@ import { Terminal } from './components/Terminal';
 import { Controls } from './components/Controls';
 import { NarrationPanel } from './components/NarrationPanel';
 import { TranscriptList } from './components/TranscriptList';
+import { QuickCommands } from './components/QuickCommands';
 import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
 import { useTerminal } from './hooks/useTerminal';
 import { useTTS } from './hooks/useTTS';
@@ -23,6 +24,7 @@ function App() {
     startSSHSession,
     endSession,
     requestSummary,
+    sendCommand,
   } = useTerminal();
 
   const {
@@ -166,8 +168,11 @@ function App() {
         <Panel defaultSize={75} minSize={40}>
           <PanelGroup direction="vertical">
             <Panel defaultSize={65} minSize={20}>
-              <div className="h-full pr-2 pb-1">
-                <Terminal terminalRef={terminalRef} />
+              <div className="h-full pr-2 pb-1 flex flex-col gap-2">
+                <div className="flex-1 min-h-0">
+                  <Terminal terminalRef={terminalRef} />
+                </div>
+                {sessionId && <QuickCommands onCommand={sendCommand} />}
               </div>
             </Panel>
 

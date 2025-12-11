@@ -14,6 +14,16 @@
 
 ---
 
+## [0.1.6] - 2025-12-11
+
+### Added
+- **Quick Command Bar**: Command input with autocomplete below terminal
+  - Quick buttons: ls, pwd, clear, exit
+  - Full autocomplete for git, npm, and system commands
+  - All Claude Code slash commands (/help, /status, /model, etc.)
+- **Volume Control**: Slider for TTS volume (0-100%)
+- **Real-time Voice Settings**: Changes apply immediately while speaking
+
 ## [0.1.5] - 2025-12-11
 
 ### Added
