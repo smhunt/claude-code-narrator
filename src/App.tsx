@@ -152,6 +152,43 @@ function App() {
     }
   }, [currentSummary, speak]);
 
+  // Auto-play: select session and immediately start speaking
+  const handleAutoPlay = useCallback(
+    async (session: Session) => {
+      setSelectedSession(session);
+
+      // Get existing summary or generate new one
+      const existingSummary =
+        detailLevel === 'high'
+          ? session.summary_high
+          : detailLevel === 'medium'
+            ? session.summary_medium
+            : session.summary_detailed;
+
+      if (existingSummary) {
+        setCurrentSummary(existingSummary);
+        setSummaryLevel(detailLevel);
+        // Auto-play after a brief delay to ensure state is set
+        setTimeout(() => speak(existingSummary), 100);
+      } else {
+        // Generate new summary then play
+        setIsSummarizing(true);
+        try {
+          const summary = await summarizeSession(session.id, detailLevel);
+          setCurrentSummary(summary);
+          setSummaryLevel(detailLevel);
+          // Auto-play the generated summary
+          setTimeout(() => speak(summary), 100);
+        } catch {
+          setCurrentSummary('Failed to generate summary');
+        } finally {
+          setIsSummarizing(false);
+        }
+      }
+    },
+    [detailLevel, summarizeSession, speak]
+  );
+
   const handleEndSession = useCallback(() => {
     endSession();
     setCurrentSummary(null);
@@ -245,6 +282,7 @@ function App() {
                 loading={sessionsLoading}
                 onRefresh={refreshSessions}
                 onSelect={handleSelectSession}
+                onAutoPlay={handleAutoPlay}
                 onDelete={deleteSession}
                 selectedId={selectedSession?.id ?? null}
               />
@@ -315,6 +353,7 @@ function App() {
                 loading={sessionsLoading}
                 onRefresh={refreshSessions}
                 onSelect={handleSelectSession}
+                onAutoPlay={handleAutoPlay}
                 onDelete={deleteSession}
                 selectedId={selectedSession?.id ?? null}
               />

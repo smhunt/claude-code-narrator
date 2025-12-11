@@ -6,6 +6,7 @@ interface TranscriptListProps {
   loading: boolean;
   onRefresh: () => void;
   onSelect: (session: Session) => void;
+  onAutoPlay: (session: Session) => void;
   onDelete: (id: string) => void;
   selectedId: string | null;
 }
@@ -15,6 +16,7 @@ export function TranscriptList({
   loading,
   onRefresh,
   onSelect,
+  onAutoPlay,
   onDelete,
   selectedId,
 }: TranscriptListProps) {
@@ -58,6 +60,8 @@ export function TranscriptList({
                 selectedId === session.id ? 'ring-2 ring-blue-500' : 'hover:bg-gray-850'
               }`}
               onClick={() => onSelect(session)}
+              onDoubleClick={() => onAutoPlay(session)}
+              title="Double-click to play"
             >
               <div className="flex items-center justify-between">
                 <div className="text-sm text-white truncate flex-1">
