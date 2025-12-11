@@ -3,6 +3,7 @@ import { Terminal } from './components/Terminal';
 import { Controls } from './components/Controls';
 import { NarrationPanel } from './components/NarrationPanel';
 import { TranscriptList } from './components/TranscriptList';
+import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
 import { useTerminal } from './hooks/useTerminal';
 import { useTTS } from './hooks/useTTS';
 import { useTranscripts, type Session } from './hooks/useTranscripts';
@@ -49,6 +50,7 @@ function App() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
+  const [showChangelog, setShowChangelog] = useState(false);
 
   // Check API status on mount
   useEffect(() => {
@@ -158,7 +160,7 @@ function App() {
         )}
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-140px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-180px)]">
         {/* Main terminal area */}
         <div className="lg:col-span-3 flex flex-col gap-4">
           <Terminal terminalRef={terminalRef} />
@@ -202,6 +204,28 @@ function App() {
           />
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="mt-4 py-3 border-t border-gray-800">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <button
+            onClick={() => setShowChangelog(true)}
+            className="hover:text-blue-400 transition-colors font-mono"
+          >
+            v{APP_VERSION}
+          </button>
+          <div className="text-center">
+            Powered by{' '}
+            <span className="text-blue-400 font-medium">Ecoworks Web Architecture</span>
+          </div>
+          <div className="text-gray-600">
+            &copy; {new Date().getFullYear()} Ecoworks
+          </div>
+        </div>
+      </footer>
+
+      {/* Changelog Modal */}
+      <ChangelogModal isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
     </div>
   );
 }

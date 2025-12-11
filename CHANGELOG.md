@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4] - 2025-12-11
+
+### Added
+- **Changelog Modal**: Click version number in footer to view changelog and roadmap
+- **Footer**: Added version display, Ecoworks branding, and copyright notice
+- **Roadmap**: In-app roadmap showing planned and future features
+
 ## [0.1.3] - 2025-12-11
 
 ### Added
@@ -56,3 +63,23 @@
 - **AI Summarization**: Three detail levels using Claude API
 - **Text-to-Speech**: Browser-native voice synthesis
 - **Transcript Recording**: Full session history with replay
+
+---
+
+## Roadmap
+
+### Planned
+- Multiple terminal tabs support
+- Custom voice profiles
+- Export transcripts to markdown
+- Keyboard shortcuts
+
+### Future
+- Team collaboration features
+- Cloud sync for transcripts
+- Plugin system for custom narrators
+
+---
+
+*Powered by Ecoworks Web Architecture*
+*© 2025 Ecoworks. All rights reserved.*
