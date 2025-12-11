@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.3] - 2025-12-11
+
+### Added
+- **SSH Session Support**: Connect to remote machines via SSH
+  - New SSH button alongside Local session option
+  - SSH connection form with host, user, port configuration
+  - Server-side SSH spawning via node-pty
+  - Session type indicator badge (Local/SSH)
+  - Connected host display in session info
+
 ## [0.1.2] - 2025-12-11
 
 ### Added
