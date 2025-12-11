@@ -64,10 +64,31 @@ export function useTerminal(): UseTerminalReturn {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(terminalRef.current);
-    fit.fit();
 
     terminalInstance.current = term;
     fitAddon.current = fit;
+
+    // Safely fit terminal after it's mounted and has dimensions
+    const safeFit = () => {
+      try {
+        if (terminalRef.current && terminalRef.current.offsetWidth > 0) {
+          fit.fit();
+        }
+      } catch (e) {
+        // Ignore fit errors during initialization
+      }
+    };
+
+    // Fit after a brief delay to ensure container has dimensions
+    requestAnimationFrame(() => {
+      safeFit();
+    });
+
+    // Also observe container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      safeFit();
+    });
+    resizeObserver.observe(terminalRef.current);
 
     // Handle terminal input
     term.onData((data) => {
@@ -76,8 +97,10 @@ export function useTerminal(): UseTerminalReturn {
 
     // Handle resize
     const handleResize = () => {
-      fit.fit();
-      socket.emit('terminal:resize', { cols: term.cols, rows: term.rows });
+      safeFit();
+      if (term.cols && term.rows) {
+        socket.emit('terminal:resize', { cols: term.cols, rows: term.rows });
+      }
     };
     window.addEventListener('resize', handleResize);
 
@@ -100,6 +123,7 @@ export function useTerminal(): UseTerminalReturn {
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       socket.off('terminal:output');
       socket.off('session:started');
       socket.off('terminal:exit');
