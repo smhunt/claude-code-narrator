@@ -220,10 +220,10 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-2 sm:p-4">
-      <header className="mb-3 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">Claude Code Narrator</h1>
-        <p className="text-gray-400 text-xs sm:text-sm">
+    <div className="h-screen max-h-screen bg-gray-900 text-white p-2 sm:p-3 flex flex-col overflow-hidden">
+      <header className="mb-2 sm:mb-3 shrink-0">
+        <h1 className="text-lg sm:text-xl font-bold">Claude Code Narrator</h1>
+        <p className="text-gray-400 text-xs">
           Terminal session capture with AI-powered narration
         </p>
         {apiAvailable === false && (
@@ -235,9 +235,9 @@ function App() {
 
       {/* Mobile Layout */}
       {isMobile ? (
-        <div className="h-[calc(100vh-160px)]">
+        <div className="flex-1 flex flex-col min-h-0">
           <MobileNav />
-          <div className="h-[calc(100%-52px)] overflow-auto">
+          <div className="flex-1 overflow-auto min-h-0">
             {mobileTab === 'terminal' && (
               <div className="h-full flex flex-col gap-2">
                 <div className="flex-1 min-h-[200px]">
@@ -291,7 +291,7 @@ function App() {
         </div>
       ) : (
         /* Desktop Layout */
-        <PanelGroup direction="horizontal" className="h-[calc(100vh-180px)]">
+        <PanelGroup direction="horizontal" className="flex-1 min-h-0">
           {/* Main terminal area */}
           <Panel defaultSize={75} minSize={40}>
             <PanelGroup direction="vertical">
@@ -363,7 +363,7 @@ function App() {
       )}
 
       {/* Footer */}
-      <footer className="mt-2 sm:mt-4 py-2 sm:py-3 border-t border-gray-800">
+      <footer className="mt-2 py-2 border-t border-gray-800 shrink-0">
         <div className="flex items-center justify-between text-xs text-gray-500">
           <button
             onClick={() => setShowChangelog(true)}
