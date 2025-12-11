@@ -14,6 +14,12 @@
 
 ---
 
+## [0.1.5] - 2025-12-11
+
+### Added
+- **Resizable Panels**: Drag handles to resize terminal, narration pane, and sidebar
+- Flexible layout that remembers your preferred pane sizes
+
 ## [0.1.4] - 2025-12-11
 
 ### Added

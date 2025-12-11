@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Terminal } from './components/Terminal';
 import { Controls } from './components/Controls';
 import { NarrationPanel } from './components/NarrationPanel';
@@ -160,50 +161,71 @@ function App() {
         )}
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-180px)]">
+      <PanelGroup direction="horizontal" className="h-[calc(100vh-180px)]">
         {/* Main terminal area */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
-          <Terminal terminalRef={terminalRef} />
-          <NarrationPanel
-            summary={currentSummary}
-            summaryLevel={summaryLevel}
-            isSpeaking={isSpeaking}
-            isPaused={isPaused}
-            onSpeak={handleSpeak}
-            onStop={stop}
-            onPause={pause}
-            onResume={resume}
-          />
-        </div>
+        <Panel defaultSize={75} minSize={40}>
+          <PanelGroup direction="vertical">
+            <Panel defaultSize={65} minSize={20}>
+              <div className="h-full pr-2 pb-1">
+                <Terminal terminalRef={terminalRef} />
+              </div>
+            </Panel>
+
+            <PanelResizeHandle className="h-2 flex items-center justify-center group cursor-row-resize">
+              <div className="w-16 h-1 rounded-full bg-gray-700 group-hover:bg-blue-500 transition-colors" />
+            </PanelResizeHandle>
+
+            <Panel defaultSize={35} minSize={15}>
+              <div className="h-full pr-2 pt-1 overflow-auto">
+                <NarrationPanel
+                  summary={currentSummary}
+                  summaryLevel={summaryLevel}
+                  isSpeaking={isSpeaking}
+                  isPaused={isPaused}
+                  onSpeak={handleSpeak}
+                  onStop={stop}
+                  onPause={pause}
+                  onResume={resume}
+                />
+              </div>
+            </Panel>
+          </PanelGroup>
+        </Panel>
+
+        <PanelResizeHandle className="w-2 flex items-center justify-center group cursor-col-resize">
+          <div className="h-16 w-1 rounded-full bg-gray-700 group-hover:bg-blue-500 transition-colors" />
+        </PanelResizeHandle>
 
         {/* Sidebar */}
-        <div className="flex flex-col gap-4 overflow-y-auto">
-          <Controls
-            isConnected={isConnected}
-            sessionId={sessionId}
-            sessionType={sessionType}
-            sshHost={sshHost}
-            onStartSession={startSession}
-            onStartSSHSession={startSSHSession}
-            onEndSession={handleEndSession}
-            onSummarize={handleSummarize}
-            detailLevel={detailLevel}
-            onDetailLevelChange={setDetailLevel}
-            ttsSettings={ttsSettings}
-            onTTSSettingsChange={updateTTSSettings}
-            voices={voices}
-            isSummarizing={isSummarizing}
-          />
-          <TranscriptList
-            sessions={sessions}
-            loading={sessionsLoading}
-            onRefresh={refreshSessions}
-            onSelect={handleSelectSession}
-            onDelete={deleteSession}
-            selectedId={selectedSession?.id ?? null}
-          />
-        </div>
-      </div>
+        <Panel defaultSize={25} minSize={15} maxSize={40}>
+          <div className="h-full pl-2 flex flex-col gap-4 overflow-y-auto">
+            <Controls
+              isConnected={isConnected}
+              sessionId={sessionId}
+              sessionType={sessionType}
+              sshHost={sshHost}
+              onStartSession={startSession}
+              onStartSSHSession={startSSHSession}
+              onEndSession={handleEndSession}
+              onSummarize={handleSummarize}
+              detailLevel={detailLevel}
+              onDetailLevelChange={setDetailLevel}
+              ttsSettings={ttsSettings}
+              onTTSSettingsChange={updateTTSSettings}
+              voices={voices}
+              isSummarizing={isSummarizing}
+            />
+            <TranscriptList
+              sessions={sessions}
+              loading={sessionsLoading}
+              onRefresh={refreshSessions}
+              onSelect={handleSelectSession}
+              onDelete={deleteSession}
+              selectedId={selectedSession?.id ?? null}
+            />
+          </div>
+        </Panel>
+      </PanelGroup>
 
       {/* Footer */}
       <footer className="mt-4 py-3 border-t border-gray-800">

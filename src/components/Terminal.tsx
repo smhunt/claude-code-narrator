@@ -15,7 +15,7 @@ export function Terminal({ terminalRef }: TerminalProps) {
   }, []);
 
   return (
-    <div className="flex-1 bg-[#1a1b26] rounded-lg overflow-hidden border border-gray-700">
+    <div className="h-full bg-[#1a1b26] rounded-lg overflow-hidden border border-gray-700">
       <div ref={terminalRef} className="h-full w-full p-2" />
     </div>
   );

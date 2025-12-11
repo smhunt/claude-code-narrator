@@ -3,9 +3,17 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.1.4';
+const APP_VERSION = '0.1.5';
 
 const changelog = [
+  {
+    version: '0.1.5',
+    date: '2025-12-11',
+    changes: [
+      'Resizable panels: Drag to resize terminal, narration, and sidebar',
+      'Improved layout with flexible pane sizing',
+    ],
+  },
   {
     version: '0.1.4',
     date: '2025-12-11',

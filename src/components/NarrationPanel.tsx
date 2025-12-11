@@ -20,8 +20,8 @@ export function NarrationPanel({
   onResume,
 }: NarrationPanelProps) {
   return (
-    <div className="bg-gray-800 rounded-lg p-4 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="h-full bg-gray-800 rounded-lg p-4 flex flex-col">
+      <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold text-white">Narration</h2>
         {summaryLevel && (
           <span className="text-xs px-2 py-1 bg-purple-600 rounded-full capitalize">
@@ -30,7 +30,7 @@ export function NarrationPanel({
         )}
       </div>
 
-      <div className="bg-gray-900 rounded-lg p-4 min-h-[150px] max-h-[300px] overflow-y-auto">
+      <div className="flex-1 bg-gray-900 rounded-lg p-4 overflow-y-auto min-h-0">
         {summary ? (
           <p className="text-gray-300 text-sm whitespace-pre-wrap">{summary}</p>
         ) : (
@@ -41,7 +41,7 @@ export function NarrationPanel({
       </div>
 
       {summary && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-3 shrink-0">
           {!isSpeaking ? (
             <button
               onClick={onSpeak}
