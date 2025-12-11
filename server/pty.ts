@@ -6,6 +6,14 @@ export interface PTYSession {
   pty: pty.IPty;
   transcript: string[];
   startedAt: number;
+  type: 'local' | 'ssh';
+  sshHost?: string;
+}
+
+export interface SSHOptions {
+  host: string;
+  user?: string;
+  port?: number;
 }
 
 class PTYManager extends EventEmitter {
@@ -27,6 +35,52 @@ class PTYManager extends EventEmitter {
       pty: ptyProcess,
       transcript: [],
       startedAt: Date.now(),
+      type: 'local',
+    };
+
+    ptyProcess.onData((data) => {
+      session.transcript.push(data);
+      this.emit('data', sessionId, data);
+    });
+
+    ptyProcess.onExit(({ exitCode }) => {
+      this.emit('exit', sessionId, exitCode);
+      this.sessions.delete(sessionId);
+    });
+
+    this.sessions.set(sessionId, session);
+    return session;
+  }
+
+  spawnSSH(sessionId: string, options: SSHOptions): PTYSession {
+    const { host, user, port = 22 } = options;
+
+    // Build SSH command
+    const sshArgs: string[] = [];
+    if (port !== 22) {
+      sshArgs.push('-p', String(port));
+    }
+    // Disable strict host key checking for convenience (user can enable if needed)
+    sshArgs.push('-o', 'StrictHostKeyChecking=accept-new');
+
+    const target = user ? `${user}@${host}` : host;
+    sshArgs.push(target);
+
+    const ptyProcess = pty.spawn('ssh', sshArgs, {
+      name: 'xterm-256color',
+      cols: 120,
+      rows: 30,
+      cwd: process.env.HOME,
+      env: process.env as { [key: string]: string },
+    });
+
+    const session: PTYSession = {
+      id: sessionId,
+      pty: ptyProcess,
+      transcript: [],
+      startedAt: Date.now(),
+      type: 'ssh',
+      sshHost: target,
     };
 
     ptyProcess.onData((data) => {

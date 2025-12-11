@@ -15,7 +15,10 @@ function App() {
     terminalRef,
     isConnected,
     sessionId,
+    sessionType,
+    sshHost,
     startSession,
+    startSSHSession,
     endSession,
     requestSummary,
   } = useTerminal();
@@ -176,7 +179,10 @@ function App() {
           <Controls
             isConnected={isConnected}
             sessionId={sessionId}
+            sessionType={sessionType}
+            sshHost={sshHost}
             onStartSession={startSession}
+            onStartSSHSession={startSSHSession}
             onEndSession={handleEndSession}
             onSummarize={handleSummarize}
             detailLevel={detailLevel}

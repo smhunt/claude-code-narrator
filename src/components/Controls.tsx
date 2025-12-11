@@ -1,9 +1,14 @@
+import { useState } from 'react';
 import type { TTSSettings } from '../hooks/useTTS';
+import type { SSHConfig } from '../hooks/useTerminal';
 
 interface ControlsProps {
   isConnected: boolean;
   sessionId: string | null;
+  sessionType: 'local' | 'ssh' | null;
+  sshHost: string | null;
   onStartSession: () => void;
+  onStartSSHSession: (config: SSHConfig) => void;
   onEndSession: () => void;
   onSummarize: (level: 'high' | 'medium' | 'detailed') => void;
   detailLevel: 'high' | 'medium' | 'detailed';
@@ -17,7 +22,10 @@ interface ControlsProps {
 export function Controls({
   isConnected,
   sessionId,
+  sessionType,
+  sshHost,
   onStartSession,
+  onStartSSHSession,
   onEndSession,
   onSummarize,
   detailLevel,
@@ -27,6 +35,18 @@ export function Controls({
   voices,
   isSummarizing,
 }: ControlsProps) {
+  const [showSSH, setShowSSH] = useState(false);
+  const [sshConfig, setSSHConfig] = useState<SSHConfig>({
+    host: '10.10.10.24',
+    user: 'seanhunt',
+    port: 22,
+  });
+
+  const handleSSHConnect = () => {
+    onStartSSHSession(sshConfig);
+    setShowSSH(false);
+  };
+
   return (
     <div className="bg-gray-800 rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -39,18 +59,90 @@ export function Controls({
             End Session
           </button>
         ) : (
-          <button
-            onClick={onStartSession}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-          >
-            Start Session
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onStartSession}
+              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
+            >
+              Local
+            </button>
+            <button
+              onClick={() => setShowSSH(!showSSH)}
+              className={`px-3 py-2 text-white rounded-lg transition-colors text-sm ${
+                showSSH ? 'bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              SSH
+            </button>
+          </div>
         )}
       </div>
 
-      {isConnected && (
+      {/* SSH Connection Form */}
+      {showSSH && !sessionId && (
+        <div className="bg-gray-900 rounded-lg p-3 space-y-3">
+          <div className="space-y-2">
+            <label className="block text-xs text-gray-400">Host</label>
+            <input
+              type="text"
+              value={sshConfig.host}
+              onChange={(e) => setSSHConfig({ ...sshConfig, host: e.target.value })}
+              className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg text-sm"
+              placeholder="10.10.10.24"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <label className="block text-xs text-gray-400">User</label>
+              <input
+                type="text"
+                value={sshConfig.user || ''}
+                onChange={(e) => setSSHConfig({ ...sshConfig, user: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg text-sm"
+                placeholder="username"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-xs text-gray-400">Port</label>
+              <input
+                type="number"
+                value={sshConfig.port || 22}
+                onChange={(e) => setSSHConfig({ ...sshConfig, port: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg text-sm"
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleSSHConnect}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+          >
+            Connect via SSH
+          </button>
+        </div>
+      )}
+
+      {/* Session Info */}
+      {sessionId && (
+        <div className="text-sm text-gray-400 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 rounded text-xs ${
+              sessionType === 'ssh' ? 'bg-blue-800' : 'bg-green-800'
+            }`}>
+              {sessionType === 'ssh' ? 'SSH' : 'Local'}
+            </span>
+            <span className="truncate">{sessionId.slice(0, 8)}...</span>
+          </div>
+          {sshHost && (
+            <div className="text-xs text-blue-400">
+              Connected to {sshHost}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!sessionId && !showSSH && isConnected && (
         <div className="text-sm text-gray-400">
-          {sessionId ? `Session: ${sessionId.slice(0, 8)}...` : 'Connected, no active session'}
+          Connected, no active session
         </div>
       )}
 

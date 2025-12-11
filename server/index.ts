@@ -83,17 +83,8 @@ io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   let currentSessionId: string | null = null;
 
-  socket.on('terminal:start', () => {
-    currentSessionId = uuidv4();
-    const dbSession = createSession(currentSessionId);
-    const ptySession = ptyManager.spawn(currentSessionId);
-
-    socket.emit('session:started', {
-      id: currentSessionId,
-      startedAt: dbSession.started_at,
-    });
-
-    // Forward PTY output to client
+  // Helper to set up PTY event handlers
+  const setupPTYHandlers = () => {
     const dataHandler = (sessionId: string, data: string) => {
       if (sessionId === currentSessionId) {
         socket.emit('terminal:output', { data });
@@ -113,7 +104,6 @@ io.on('connection', (socket) => {
       ptyManager.off('data', dataHandler);
       ptyManager.off('exit', exitHandler);
       if (currentSessionId && ptyManager.has(currentSessionId)) {
-        // Save transcript before killing
         const lines = ptyManager.getTranscriptLines(currentSessionId);
         const session = getSession(currentSessionId);
         if (session && lines.length > 0) {
@@ -123,6 +113,42 @@ io.on('connection', (socket) => {
         ptyManager.kill(currentSessionId);
       }
     });
+  };
+
+  // Start local terminal session
+  socket.on('terminal:start', () => {
+    currentSessionId = uuidv4();
+    const dbSession = createSession(currentSessionId);
+    ptyManager.spawn(currentSessionId);
+
+    socket.emit('session:started', {
+      id: currentSessionId,
+      startedAt: dbSession.started_at,
+      type: 'local',
+    });
+
+    setupPTYHandlers();
+  });
+
+  // Start SSH session
+  socket.on('terminal:ssh', ({ host, user, port }: { host: string; user?: string; port?: number }) => {
+    currentSessionId = uuidv4();
+    const dbSession = createSession(currentSessionId);
+
+    try {
+      ptyManager.spawnSSH(currentSessionId, { host, user, port });
+
+      socket.emit('session:started', {
+        id: currentSessionId,
+        startedAt: dbSession.started_at,
+        type: 'ssh',
+        sshHost: user ? `${user}@${host}` : host,
+      });
+
+      setupPTYHandlers();
+    } catch (error) {
+      socket.emit('session:error', { error: 'Failed to start SSH session' });
+    }
   });
 
   socket.on('terminal:input', ({ data }) => {

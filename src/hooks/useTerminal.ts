@@ -3,11 +3,20 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { socket, connectSocket } from '../lib/socket';
 
+export interface SSHConfig {
+  host: string;
+  user?: string;
+  port?: number;
+}
+
 export interface UseTerminalReturn {
   terminalRef: React.RefObject<HTMLDivElement | null>;
   isConnected: boolean;
   sessionId: string | null;
+  sessionType: 'local' | 'ssh' | null;
+  sshHost: string | null;
   startSession: () => Promise<void>;
+  startSSHSession: (config: SSHConfig) => Promise<void>;
   endSession: () => void;
   requestSummary: (level: 'high' | 'medium' | 'detailed') => void;
 }
@@ -18,6 +27,8 @@ export function useTerminal(): UseTerminalReturn {
   const fitAddon = useRef<FitAddon | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionType, setSessionType] = useState<'local' | 'ssh' | null>(null);
+  const [sshHost, setSSHHost] = useState<string | null>(null);
 
   useEffect(() => {
     if (!terminalRef.current || terminalInstance.current) return;
@@ -74,8 +85,10 @@ export function useTerminal(): UseTerminalReturn {
       term.write(data);
     });
 
-    socket.on('session:started', ({ id }) => {
+    socket.on('session:started', ({ id, type, sshHost: host }) => {
       setSessionId(id);
+      setSessionType(type || 'local');
+      setSSHHost(host || null);
       term.clear();
       term.focus();
     });
@@ -104,9 +117,21 @@ export function useTerminal(): UseTerminalReturn {
     }
   }, []);
 
+  const startSSHSession = useCallback(async (config: SSHConfig) => {
+    try {
+      await connectSocket();
+      setIsConnected(true);
+      socket.emit('terminal:ssh', config);
+    } catch (error) {
+      console.error('Failed to connect:', error);
+    }
+  }, []);
+
   const endSession = useCallback(() => {
     socket.emit('session:end');
     setSessionId(null);
+    setSessionType(null);
+    setSSHHost(null);
   }, []);
 
   const requestSummary = useCallback((level: 'high' | 'medium' | 'detailed') => {
@@ -117,7 +142,10 @@ export function useTerminal(): UseTerminalReturn {
     terminalRef,
     isConnected,
     sessionId,
+    sessionType,
+    sshHost,
     startSession,
+    startSSHSession,
     endSession,
     requestSummary,
   };
