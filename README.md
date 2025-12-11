@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# Claude Code Narrator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**AI-powered terminal session capture and narration tool**
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Claude Code Narrator captures terminal sessions and provides AI-generated audio narration of what's happening. Perfect for:
 
-## React Compiler
+- **Accessibility** - Get audio descriptions of terminal activity for visually impaired users
+- **Learning** - Understand complex command-line operations through plain English explanations
+- **Documentation** - Generate natural language summaries of terminal sessions
+- **Review** - Replay past sessions with AI narration at different detail levels
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+- **Terminal Capture** - Full-featured xterm.js terminal with real-time session recording
+- **Local & SSH Sessions** - Connect to local shell or remote machines via SSH
+- **AI Summarization** - Claude API generates summaries at three detail levels (Brief, Standard, Detailed)
+- **Text-to-Speech** - Browser-native voice synthesis with customizable voice, speed, and pitch
+- **Session History** - Persistent storage of all sessions with transcript replay
+- **Dark Theme** - Tokyo Night-inspired terminal styling
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Quick Start
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Install dependencies
+npm install
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# Set up API key (create .env file)
+echo "ANTHROPIC_API_KEY=your-key-here" > .env
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start both frontend and backend
+npm run dev:all
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Access
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Service | URL |
+|---------|-----|
+| Frontend | http://10.10.10.24:3006 |
+| Backend API | http://10.10.10.24:3086 |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Architecture
+
 ```
+┌─────────────────┐     ┌─────────────────┐
+│   React App     │────▶│  Express Server │
+│   (xterm.js)    │◀────│  (Socket.io)    │
+│   Port 3006     │     │   Port 3086     │
+└─────────────────┘     └────────┬────────┘
+                                 │
+                    ┌────────────┼────────────┐
+                    │            │            │
+               ┌────▼────┐ ┌─────▼─────┐ ┌────▼────┐
+               │ node-pty│ │  SQLite   │ │ Claude  │
+               │ (PTY)   │ │ (Sessions)│ │   API   │
+               └─────────┘ └───────────┘ └─────────┘
+```
+
+## Tech Stack
+
+- **Frontend**: React 19, TypeScript, Tailwind CSS, xterm.js
+- **Backend**: Express, Socket.io, node-pty, better-sqlite3
+- **AI**: Claude API (Anthropic)
+- **TTS**: Web Speech API
+
+## Version
+
+Current: **v0.1.4**
+
+Click the version number in the app footer to view the full changelog and roadmap.
+
+---
+
+*Powered by Ecoworks Web Architecture*
+
+*© 2025 Ecoworks. All rights reserved.*

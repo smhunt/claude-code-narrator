@@ -1,5 +1,19 @@
 # Changelog
 
+## About
+
+**Claude Code Narrator** is an AI-powered terminal session capture and narration tool. It records terminal sessions and uses Claude AI to generate natural language summaries that can be read aloud via text-to-speech.
+
+**Use Cases:**
+- **Accessibility** - Audio descriptions of terminal activity
+- **Learning** - Plain English explanations of command-line operations
+- **Documentation** - Generate summaries of terminal sessions
+- **Review** - Replay past sessions with AI narration
+
+**Access:** http://10.10.10.24:3006 | API: http://10.10.10.24:3086
+
+---
+
 ## [0.1.4] - 2025-12-11
 
 ### Added
