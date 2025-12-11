@@ -1,3 +1,10 @@
+# Environment
+.env
+.env.local
+
+# Runtime data
+data/
+
 # Logs
 logs
 *.log

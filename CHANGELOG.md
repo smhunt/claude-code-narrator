@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.1] - 2025-12-11
+
+### Added
+- Environment variable support with dotenv
+- `.env` file for API key configuration (gitignored)
+
+### Security
+- Added `.env` and `.env.local` to `.gitignore` to protect secrets
+- API key no longer needs to be passed on command line
+
 ## [0.1.0] - 2025-12-11
 
 ### Added
