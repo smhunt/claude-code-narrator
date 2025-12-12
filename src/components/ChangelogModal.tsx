@@ -3,9 +3,19 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.1.8';
+const APP_VERSION = '0.2.0';
 
 const changelog = [
+  {
+    version: '0.2.0',
+    date: '2025-12-12',
+    changes: [
+      'Dynamic network configuration (no more hardcoded IPs)',
+      'Voice settings now persist across sessions (localStorage)',
+      'Improved SSH form with empty defaults (user must enter their own host)',
+      'Better portability - works on any network without code changes',
+    ],
+  },
   {
     version: '0.1.8',
     date: '2025-12-12',

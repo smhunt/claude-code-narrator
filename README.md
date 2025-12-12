@@ -35,10 +35,14 @@ npm run dev:all
 
 ## Access
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://10.10.10.24:3006 |
-| Backend API | http://10.10.10.24:3086 |
+The app auto-detects your network hostname. Access it at:
+
+| Service | Default Port |
+|---------|--------------|
+| Frontend | 3006 |
+| Backend API | 3086 |
+
+Example: If your LAN IP is `10.10.10.24`, access at `http://10.10.10.24:3006`
 
 ## Architecture
 
@@ -66,7 +70,7 @@ npm run dev:all
 
 ## Version
 
-Current: **v0.1.4**
+Current: **v0.2.0**
 
 Click the version number in the app footer to view the full changelog and roadmap.
 

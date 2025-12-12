@@ -10,9 +10,24 @@
 - **Documentation** - Generate summaries of terminal sessions
 - **Review** - Replay past sessions with AI narration
 
-**Access:** http://10.10.10.24:3006 | API: http://10.10.10.24:3086
+**Access:** Auto-detects your network (Frontend: port 3006, API: port 3086)
 
 ---
+
+## [0.2.0] - 2025-12-12
+
+### Added
+- **Dynamic Network Configuration**: App auto-detects hostname - no more hardcoded IPs
+- **Settings Persistence**: Voice settings (rate, pitch, volume, voice) saved to localStorage
+- **Portable Architecture**: Works on any network without code changes
+
+### Changed
+- SSH form now starts with empty host/user fields (user must enter their own)
+- API URLs dynamically constructed from `window.location.hostname`
+- Updated README with portable access instructions
+
+### Fixed
+- Removed all hardcoded IP addresses from codebase
 
 ## [0.1.8] - 2025-12-12
 

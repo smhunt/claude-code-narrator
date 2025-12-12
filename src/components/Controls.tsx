@@ -37,8 +37,8 @@ export function Controls({
 }: ControlsProps) {
   const [showSSH, setShowSSH] = useState(false);
   const [sshConfig, setSSHConfig] = useState<SSHConfig>({
-    host: '10.10.10.24',
-    user: 'seanhunt',
+    host: '',
+    user: '',
     port: 22,
   });
 
@@ -88,7 +88,7 @@ export function Controls({
               value={sshConfig.host}
               onChange={(e) => setSSHConfig({ ...sshConfig, host: e.target.value })}
               className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg text-sm"
-              placeholder="10.10.10.24"
+              placeholder="hostname or IP"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">

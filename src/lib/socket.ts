@@ -1,6 +1,10 @@
 import { io, Socket } from 'socket.io-client';
 
-const BACKEND_URL = 'http://10.10.10.24:3086';
+// Use same hostname as frontend, with backend port from env or default 3086
+const API_PORT = import.meta.env.VITE_API_PORT || '3086';
+const BACKEND_URL = `http://${window.location.hostname}:${API_PORT}`;
+
+export { BACKEND_URL };
 
 export const socket: Socket = io(BACKEND_URL, {
   autoConnect: false,

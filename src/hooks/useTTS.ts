@@ -26,11 +26,33 @@ const DEFAULT_SETTINGS: TTSSettings = {
   voiceIndex: 0,
 };
 
+const STORAGE_KEY = 'claude-narrator-tts-settings';
+
+function loadSettings(): TTSSettings {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return DEFAULT_SETTINGS;
+}
+
+function saveSettings(settings: TTSSettings): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export function useTTS(): UseTTSReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [settings, setSettings] = useState<TTSSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<TTSSettings>(loadSettings);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const currentTextRef = useRef<string>('');
 
@@ -126,7 +148,11 @@ export function useTTS(): UseTTSReturn {
   }, []);
 
   const updateSettings = useCallback((newSettings: Partial<TTSSettings>) => {
-    setSettings((prev) => ({ ...prev, ...newSettings }));
+    setSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      saveSettings(updated);
+      return updated;
+    });
   }, []);
 
   return {

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
+import { BACKEND_URL } from '../lib/socket';
 
-const API_BASE = 'http://10.10.10.24:3086/api';
+const API_BASE = `${BACKEND_URL}/api`;
 
 export interface Session {
   id: string;

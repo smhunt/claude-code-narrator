@@ -9,7 +9,7 @@ import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
 import { useTerminal } from './hooks/useTerminal';
 import { useTTS } from './hooks/useTTS';
 import { useTranscripts, type Session } from './hooks/useTranscripts';
-import { socket } from './lib/socket';
+import { socket, BACKEND_URL } from './lib/socket';
 
 type DetailLevel = 'high' | 'medium' | 'detailed';
 
@@ -66,7 +66,7 @@ function App() {
 
   // Check API status on mount
   useEffect(() => {
-    fetch('http://10.10.10.24:3086/api/status')
+    fetch(`${BACKEND_URL}/api/status`)
       .then((res) => res.json())
       .then((data) => setApiAvailable(data.apiAvailable))
       .catch(() => setApiAvailable(false));
