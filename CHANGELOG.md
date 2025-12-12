@@ -14,6 +14,16 @@
 
 ---
 
+## [0.1.8] - 2025-12-12
+
+### Added
+- **Double-click to Play**: Double-click history items to auto-play narration
+- **Auto-fit Layout**: UI automatically fits screen height without scrolling
+
+### Fixed
+- Fixed xterm dimensions error on initialization
+- Compact header/footer for more content space
+
 ## [0.1.7] - 2025-12-11
 
 ### Added

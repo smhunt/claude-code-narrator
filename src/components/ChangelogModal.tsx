@@ -3,9 +3,19 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.1.7';
+const APP_VERSION = '0.1.8';
 
 const changelog = [
+  {
+    version: '0.1.8',
+    date: '2025-12-12',
+    changes: [
+      'Double-click history item to auto-play narration',
+      'Fixed xterm dimensions error on initialization',
+      'Auto-fit layout to screen height (no scrolling)',
+      'Compact header and footer for more content space',
+    ],
+  },
   {
     version: '0.1.7',
     date: '2025-12-11',
