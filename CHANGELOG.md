@@ -14,6 +14,16 @@
 
 ---
 
+## [0.2.1] - 2025-12-12
+
+### Added
+- **Toast Notifications**: Visual feedback for all user actions
+  - Success toasts: "Session saved", "Summary generated"
+  - Error toasts: "Connection failed", "API unavailable"
+  - Info toasts: "Session started", "Session ended"
+- Slide-in animation for toast messages
+- Auto-dismiss after 4 seconds with manual close option
+
 ## [0.2.0] - 2025-12-12
 
 ### Added

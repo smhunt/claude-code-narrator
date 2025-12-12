@@ -10,6 +10,7 @@ import { useTerminal } from './hooks/useTerminal';
 import { useTTS } from './hooks/useTTS';
 import { useTranscripts, type Session } from './hooks/useTranscripts';
 import { socket, BACKEND_URL } from './lib/socket';
+import { useToast } from './components/Toast';
 
 type DetailLevel = 'high' | 'medium' | 'detailed';
 
@@ -47,6 +48,8 @@ function App() {
     summarizeSession,
   } = useTranscripts();
 
+  const toast = useToast();
+
   const [detailLevel, setDetailLevel] = useState<DetailLevel>('medium');
   const [currentSummary, setCurrentSummary] = useState<string | null>(null);
   const [summaryLevel, setSummaryLevel] = useState<string | null>(null);
@@ -72,7 +75,7 @@ function App() {
       .catch(() => setApiAvailable(false));
   }, []);
 
-  // Listen for summary results
+  // Listen for socket events
   useEffect(() => {
     const handleSummaryStarted = () => {
       setIsSummarizing(true);
@@ -82,28 +85,49 @@ function App() {
       setCurrentSummary(text);
       setSummaryLevel(level);
       setIsSummarizing(false);
+      toast.success('Summary generated');
     };
 
-    const handleSummaryError = () => {
+    const handleSummaryError = ({ error }: { error?: string }) => {
       setIsSummarizing(false);
+      toast.error(error || 'Failed to generate summary');
     };
 
     const handleSessionSaved = () => {
       refreshSessions();
+      toast.success('Session saved');
+    };
+
+    const handleSessionStarted = ({ type }: { type: string }) => {
+      toast.info(`${type === 'ssh' ? 'SSH' : 'Local'} session started`);
+    };
+
+    const handleTerminalExit = () => {
+      toast.info('Session ended');
+    };
+
+    const handleConnectError = () => {
+      toast.error('Connection to server failed');
     };
 
     socket.on('summary:started', handleSummaryStarted);
     socket.on('summary:result', handleSummaryResult);
     socket.on('summary:error', handleSummaryError);
     socket.on('session:saved', handleSessionSaved);
+    socket.on('session:started', handleSessionStarted);
+    socket.on('terminal:exit', handleTerminalExit);
+    socket.on('connect_error', handleConnectError);
 
     return () => {
       socket.off('summary:started', handleSummaryStarted);
       socket.off('summary:result', handleSummaryResult);
       socket.off('summary:error', handleSummaryError);
       socket.off('session:saved', handleSessionSaved);
+      socket.off('session:started', handleSessionStarted);
+      socket.off('terminal:exit', handleTerminalExit);
+      socket.off('connect_error', handleConnectError);
     };
-  }, [refreshSessions]);
+  }, [refreshSessions, toast]);
 
   const handleSummarize = useCallback(
     (level: DetailLevel) => {

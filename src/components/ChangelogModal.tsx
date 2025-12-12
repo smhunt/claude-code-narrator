@@ -3,9 +3,19 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.2.0';
+const APP_VERSION = '0.2.1';
 
 const changelog = [
+  {
+    version: '0.2.1',
+    date: '2025-12-12',
+    changes: [
+      'Toast notifications for user feedback (success, error, info)',
+      'Session events now show visual feedback (started, saved, ended)',
+      'Summary generation shows success/error notifications',
+      'Connection errors displayed with toast messages',
+    ],
+  },
   {
     version: '0.2.0',
     date: '2025-12-12',
