@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { SSHConfig } from '../hooks/useTerminal';
+import { loadSSHPresets, type SSHPreset } from '../lib/sshPresets';
 
 type DetailLevel = 'high' | 'medium' | 'detailed';
 
@@ -50,17 +51,46 @@ export function AppHeader({
   onOpenSettings,
   onOpenDrawer,
 }: AppHeaderProps) {
-  const [showSSHForm, setShowSSHForm] = useState(false);
-  const [sshConfig, setSSHConfig] = useState<SSHConfig>({
+  const [showSSHPanel, setShowSSHPanel] = useState(false);
+  const [presets, setPresets] = useState<SSHPreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('');
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customConfig, setCustomConfig] = useState<SSHConfig>({
     host: '',
     user: '',
     port: 22,
   });
 
-  const handleSSHConnect = () => {
-    onStartSSHSession(sshConfig);
-    setShowSSHForm(false);
+  // Load presets on mount
+  useEffect(() => {
+    const loaded = loadSSHPresets();
+    setPresets(loaded);
+    if (loaded.length > 0) {
+      setSelectedPresetId(loaded[0].id);
+    }
+  }, []);
+
+  const handlePresetConnect = () => {
+    const preset = presets.find(p => p.id === selectedPresetId);
+    if (preset) {
+      onStartSSHSession({
+        host: preset.host,
+        user: preset.user,
+        port: preset.port,
+      });
+      setShowSSHPanel(false);
+    }
   };
+
+  const handleCustomConnect = () => {
+    if (customConfig.host) {
+      onStartSSHSession(customConfig);
+      setShowSSHPanel(false);
+      setShowCustomForm(false);
+    }
+  };
+
+  const selectedPreset = presets.find(p => p.id === selectedPresetId);
 
   const detailLabels: Record<DetailLevel, string> = {
     high: 'B',
@@ -97,9 +127,9 @@ export function AppHeader({
                 Local
               </button>
               <button
-                onClick={() => setShowSSHForm(!showSSHForm)}
+                onClick={() => setShowSSHPanel(!showSSHPanel)}
                 className={`px-2 py-1 text-white text-xs rounded transition-colors ${
-                  showSSHForm ? 'bg-blue-500' : 'bg-blue-600 hover:bg-blue-500'
+                  showSSHPanel ? 'bg-blue-500' : 'bg-blue-600 hover:bg-blue-500'
                 }`}
               >
                 SSH
@@ -218,46 +248,103 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* SSH Form (expandable) */}
-      {showSSHForm && !sessionId && (
-        <div className="px-3 pb-3 border-t border-theme pt-3">
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <label className="block text-xs text-theme-muted mb-1">Host</label>
-              <input
-                type="text"
-                value={sshConfig.host}
-                onChange={(e) => setSSHConfig({ ...sshConfig, host: e.target.value })}
-                className="w-full px-2 py-1 bg-theme-tertiary text-theme-primary rounded text-sm border border-theme"
-                placeholder="hostname"
-              />
+      {/* SSH Panel (expandable) */}
+      {showSSHPanel && !sessionId && (
+        <div className="px-3 pb-3 border-t border-theme pt-3 space-y-3">
+          {/* Preset Selection */}
+          {!showCustomForm && (
+            <div className="space-y-2">
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs text-theme-muted mb-1">Saved Connections</label>
+                  <select
+                    value={selectedPresetId}
+                    onChange={(e) => setSelectedPresetId(e.target.value)}
+                    className="w-full px-2 py-2 bg-theme-tertiary text-theme-primary rounded text-sm border border-theme"
+                  >
+                    {presets.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.name} ({preset.user}@{preset.host})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  onClick={handlePresetConnect}
+                  disabled={!selectedPreset}
+                  className="px-4 py-2 btn-accent text-sm rounded disabled:opacity-50"
+                >
+                  Connect
+                </button>
+              </div>
+
+              {selectedPreset && (
+                <div className="text-xs text-theme-muted">
+                  {selectedPreset.user}@{selectedPreset.host}:{selectedPreset.port}
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowCustomForm(true)}
+                className="text-xs text-theme-muted hover:text-theme-primary transition-colors"
+              >
+                + Custom connection...
+              </button>
             </div>
-            <div className="w-20">
-              <label className="block text-xs text-theme-muted mb-1">User</label>
-              <input
-                type="text"
-                value={sshConfig.user || ''}
-                onChange={(e) => setSSHConfig({ ...sshConfig, user: e.target.value })}
-                className="w-full px-2 py-1 bg-theme-tertiary text-theme-primary rounded text-sm border border-theme"
-                placeholder="user"
-              />
+          )}
+
+          {/* Custom Form */}
+          {showCustomForm && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-theme-muted">Custom Connection</label>
+                <button
+                  onClick={() => setShowCustomForm(false)}
+                  className="text-xs text-theme-muted hover:text-theme-primary"
+                >
+                  Back to presets
+                </button>
+              </div>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={customConfig.host}
+                    onChange={(e) => setCustomConfig({ ...customConfig, host: e.target.value })}
+                    className="w-full px-2 py-1 bg-theme-tertiary text-theme-primary rounded text-sm border border-theme"
+                    placeholder="hostname or IP"
+                  />
+                </div>
+                <div className="w-24">
+                  <input
+                    type="text"
+                    value={customConfig.user || ''}
+                    onChange={(e) => setCustomConfig({ ...customConfig, user: e.target.value })}
+                    className="w-full px-2 py-1 bg-theme-tertiary text-theme-primary rounded text-sm border border-theme"
+                    placeholder="user"
+                  />
+                </div>
+                <div className="w-16">
+                  <input
+                    type="number"
+                    value={customConfig.port || 22}
+                    onChange={(e) => setCustomConfig({ ...customConfig, port: Number(e.target.value) })}
+                    className="w-full px-2 py-1 bg-theme-tertiary text-theme-primary rounded text-sm border border-theme"
+                  />
+                </div>
+                <button
+                  onClick={handleCustomConnect}
+                  disabled={!customConfig.host}
+                  className="px-3 py-1 btn-accent text-sm rounded disabled:opacity-50"
+                >
+                  Connect
+                </button>
+              </div>
+              <p className="text-xs text-theme-muted">
+                Tip: Add frequently used connections in Settings
+              </p>
             </div>
-            <div className="w-16">
-              <label className="block text-xs text-theme-muted mb-1">Port</label>
-              <input
-                type="number"
-                value={sshConfig.port || 22}
-                onChange={(e) => setSSHConfig({ ...sshConfig, port: Number(e.target.value) })}
-                className="w-full px-2 py-1 bg-theme-tertiary text-theme-primary rounded text-sm border border-theme"
-              />
-            </div>
-            <button
-              onClick={handleSSHConnect}
-              className="px-3 py-1 btn-accent text-sm rounded"
-            >
-              Connect
-            </button>
-          </div>
+          )}
         </div>
       )}
     </header>
