@@ -159,6 +159,13 @@ export function useTTS(): UseTTSReturn {
   // Browser TTS speak
   const speakBrowser = useCallback(
     (text: string, currentSettings: TTSSettings, isRestart = false) => {
+      console.log('[TTS Browser] speak called', {
+        textLength: text?.length,
+        isRestart,
+        voiceIndex: currentSettings.voiceIndex,
+        voicesAvailable: voices.length,
+      });
+
       if (isRestart) {
         isRestartingRef.current = true;
       }
@@ -172,15 +179,20 @@ export function useTTS(): UseTTSReturn {
 
       if (voices[currentSettings.voiceIndex]) {
         utterance.voice = voices[currentSettings.voiceIndex];
+        console.log('[TTS Browser] using voice:', voices[currentSettings.voiceIndex].name);
+      } else {
+        console.log('[TTS Browser] no voice at index', currentSettings.voiceIndex);
       }
 
       utterance.onstart = () => {
+        console.log('[TTS Browser] onstart fired');
         isRestartingRef.current = false;
         setIsSpeaking(true);
         setIsPaused(false);
       };
 
       utterance.onend = () => {
+        console.log('[TTS Browser] onend fired');
         if (!isRestartingRef.current) {
           setIsSpeaking(false);
           setIsPaused(false);
@@ -188,7 +200,8 @@ export function useTTS(): UseTTSReturn {
         }
       };
 
-      utterance.onerror = () => {
+      utterance.onerror = (e) => {
+        console.error('[TTS Browser] onerror fired', e);
         isRestartingRef.current = false;
         setIsSpeaking(false);
         setIsPaused(false);
@@ -196,6 +209,7 @@ export function useTTS(): UseTTSReturn {
 
       utteranceRef.current = utterance;
       currentTextRef.current = text;
+      console.log('[TTS Browser] calling speechSynthesis.speak()');
       speechSynthesis.speak(utterance);
     },
     [voices]
@@ -267,6 +281,15 @@ export function useTTS(): UseTTSReturn {
 
   const speak = useCallback(
     (text: string) => {
+      console.log('[TTS] speak() called', {
+        provider: settings.provider,
+        textLength: text?.length,
+        hasText: !!text,
+      });
+      if (!text) {
+        console.warn('[TTS] speak() called with empty text');
+        return;
+      }
       if (settings.provider === 'openai') {
         speakOpenAI(text, settings);
       } else {

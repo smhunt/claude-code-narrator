@@ -199,8 +199,11 @@ function App() {
   );
 
   const handleSpeak = useCallback(() => {
+    console.log('[App] handleSpeak called', { hasSummary: !!currentSummary, summaryLength: currentSummary?.length });
     if (currentSummary) {
       speak(currentSummary);
+    } else {
+      console.warn('[App] handleSpeak: no currentSummary to speak');
     }
   }, [currentSummary, speak]);
 
@@ -317,19 +320,45 @@ function App() {
         </div>
       )}
 
-      {/* Main Content: Terminal always visible */}
-      <main className="flex-1 flex flex-col min-h-0 p-2 sm:p-3 gap-2">
-        {/* Terminal */}
-        <div className="flex-1 min-h-0" data-tour="terminal">
-          <Terminal terminalRef={terminalRef} />
+      {/* Main Content: Terminal + Side Drawer */}
+      <main className="flex-1 flex min-h-0">
+        {/* Terminal Area */}
+        <div className="flex-1 flex flex-col min-h-0 p-2 sm:p-3 gap-2">
+          {/* Terminal */}
+          <div className="flex-1 min-h-0" data-tour="terminal">
+            <Terminal terminalRef={terminalRef} />
+          </div>
+
+          {/* Quick Commands */}
+          {sessionId && (
+            <div data-tour="quick-commands">
+              <QuickCommands onCommand={sendCommand} />
+            </div>
+          )}
         </div>
 
-        {/* Quick Commands */}
-        {sessionId && (
-          <div data-tour="quick-commands">
-            <QuickCommands onCommand={sendCommand} />
-          </div>
-        )}
+        {/* Side Drawer - inline, not overlay */}
+        <SideDrawer
+          isOpen={showDrawer}
+          onClose={() => setShowDrawer(false)}
+          sessions={sessions}
+          sessionsLoading={sessionsLoading}
+          onRefreshSessions={refreshSessions}
+          onSelectSession={handleSelectSession}
+          onAutoPlay={handleAutoPlay}
+          onPlaySummary={handlePlaySummary}
+          onViewTranscript={handleViewTranscript}
+          onDeleteSession={deleteSession}
+          selectedSessionId={selectedSession?.id ?? null}
+          summary={currentSummary}
+          summaryLevel={summaryLevel}
+          isSpeaking={isSpeaking}
+          isPaused={isPaused}
+          onSpeak={handleSpeak}
+          onStop={stop}
+          onPause={pause}
+          onResume={resume}
+        />
       </main>
 
       {/* Footer */}
@@ -351,29 +380,6 @@ function App() {
           Powered by <span className="text-[var(--accent-primary)]">Ecoworks</span>
         </span>
       </footer>
-
-      {/* Side Drawer for History & Narration */}
-      <SideDrawer
-        isOpen={showDrawer}
-        onClose={() => setShowDrawer(false)}
-        sessions={sessions}
-        sessionsLoading={sessionsLoading}
-        onRefreshSessions={refreshSessions}
-        onSelectSession={handleSelectSession}
-        onAutoPlay={handleAutoPlay}
-        onPlaySummary={handlePlaySummary}
-        onViewTranscript={handleViewTranscript}
-        onDeleteSession={deleteSession}
-        selectedSessionId={selectedSession?.id ?? null}
-        summary={currentSummary}
-        summaryLevel={summaryLevel}
-        isSpeaking={isSpeaking}
-        isPaused={isPaused}
-        onSpeak={handleSpeak}
-        onStop={stop}
-        onPause={pause}
-        onResume={resume}
-      />
 
       {/* Settings Modal */}
       <SettingsModal

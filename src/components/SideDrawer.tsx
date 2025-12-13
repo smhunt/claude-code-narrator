@@ -61,79 +61,55 @@ export function SideDrawer({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when drawer is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  // No backdrop blocking - drawer is inline
+  if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={onClose}
-      />
+    <div className="w-80 min-w-[280px] max-w-sm h-full bg-theme-primary border-l border-theme flex flex-col shrink-0">
+      {/* Header */}
+      <div className="flex items-center justify-between p-3 border-b border-theme bg-theme-secondary shrink-0">
+        <h2 className="text-sm font-semibold text-theme-primary">History</h2>
+        <button
+          onClick={onClose}
+          className="p-1 hover:bg-theme-tertiary rounded transition-colors text-theme-secondary hover:text-theme-primary"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-      {/* Drawer */}
-      <div
-        className={`fixed top-0 right-0 z-50 h-full w-full max-w-sm bg-theme-primary border-l border-theme shadow-2xl transform transition-transform duration-300 ease-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-theme bg-theme-secondary">
-          <h2 className="text-lg font-semibold text-theme-primary">History & Narration</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-theme-tertiary rounded-lg transition-colors text-theme-secondary hover:text-theme-primary"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+      {/* Content */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Narration Panel - compact at top */}
+        <div className="p-3 border-b border-theme bg-theme-secondary/50 shrink-0">
+          <NarrationPanel
+            summary={summary}
+            summaryLevel={summaryLevel}
+            isSpeaking={isSpeaking}
+            isPaused={isPaused}
+            onSpeak={onSpeak}
+            onStop={onStop}
+            onPause={onPause}
+            onResume={onResume}
+          />
         </div>
 
-        {/* Content */}
-        <div className="flex flex-col h-[calc(100%-64px)] overflow-hidden">
-          {/* Narration Panel - at top for quick access */}
-          <div className="p-4 border-b border-theme bg-theme-secondary/50">
-            <NarrationPanel
-              summary={summary}
-              summaryLevel={summaryLevel}
-              isSpeaking={isSpeaking}
-              isPaused={isPaused}
-              onSpeak={onSpeak}
-              onStop={onStop}
-              onPause={onPause}
-              onResume={onResume}
-            />
-          </div>
-
-          {/* History List - scrollable */}
-          <div className="flex-1 overflow-y-auto p-4">
-            <TranscriptList
-              sessions={sessions}
-              loading={sessionsLoading}
-              onRefresh={onRefreshSessions}
-              onSelect={onSelectSession}
-              onAutoPlay={onAutoPlay}
-              onPlaySummary={onPlaySummary}
-              onViewTranscript={onViewTranscript}
-              onDelete={onDeleteSession}
-              selectedId={selectedSessionId}
-            />
-          </div>
+        {/* History List - scrollable */}
+        <div className="flex-1 overflow-y-auto p-3">
+          <TranscriptList
+            sessions={sessions}
+            loading={sessionsLoading}
+            onRefresh={onRefreshSessions}
+            onSelect={onSelectSession}
+            onAutoPlay={onAutoPlay}
+            onPlaySummary={onPlaySummary}
+            onViewTranscript={onViewTranscript}
+            onDelete={onDeleteSession}
+            selectedId={selectedSessionId}
+          />
         </div>
       </div>
-    </>
+    </div>
   );
 }
