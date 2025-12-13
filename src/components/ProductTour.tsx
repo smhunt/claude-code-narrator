@@ -67,40 +67,69 @@ export function ProductTour({
     });
 
     // Calculate tooltip position based on specified position or auto
-    const position = currentStepData.position || 'bottom';
+    let position = currentStepData.position || 'bottom';
     const tooltipWidth = 360;
-    const tooltipHeight = 200; // Approximate
+    const tooltipHeight = 220; // Approximate
     const gap = 16;
+    const margin = 16; // Minimum margin from screen edges
 
     let style: React.CSSProperties = {};
     let arrow: 'top' | 'bottom' | 'left' | 'right' = 'top';
 
+    // Check if preferred position would go off-screen and adjust
+    const spaceLeft = rect.left;
+    const spaceRight = window.innerWidth - rect.right;
+    const spaceTop = rect.top;
+    const spaceBottom = window.innerHeight - rect.bottom;
+
+    // If 'left' position would go off-screen, try alternatives
+    if (position === 'left' && spaceLeft < tooltipWidth + gap + margin) {
+      if (spaceRight >= tooltipWidth + gap + margin) {
+        position = 'right';
+      } else if (spaceTop >= tooltipHeight + gap + margin) {
+        position = 'top';
+      } else {
+        position = 'bottom';
+      }
+    }
+
+    // If 'right' position would go off-screen, try alternatives
+    if (position === 'right' && spaceRight < tooltipWidth + gap + margin) {
+      if (spaceLeft >= tooltipWidth + gap + margin) {
+        position = 'left';
+      } else if (spaceTop >= tooltipHeight + gap + margin) {
+        position = 'top';
+      } else {
+        position = 'bottom';
+      }
+    }
+
     switch (position) {
       case 'bottom':
         style = {
-          top: rect.bottom + gap,
-          left: Math.max(16, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - 16)),
+          top: Math.min(rect.bottom + gap, window.innerHeight - tooltipHeight - margin),
+          left: Math.max(margin, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - margin)),
         };
         arrow = 'top';
         break;
       case 'top':
         style = {
-          top: rect.top - tooltipHeight - gap,
-          left: Math.max(16, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - 16)),
+          top: Math.max(margin, rect.top - tooltipHeight - gap),
+          left: Math.max(margin, Math.min(rect.left + rect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - margin)),
         };
         arrow = 'bottom';
         break;
       case 'right':
         style = {
-          top: Math.max(16, rect.top + rect.height / 2 - tooltipHeight / 2),
-          left: rect.right + gap,
+          top: Math.max(margin, Math.min(rect.top + rect.height / 2 - tooltipHeight / 2, window.innerHeight - tooltipHeight - margin)),
+          left: Math.min(rect.right + gap, window.innerWidth - tooltipWidth - margin),
         };
         arrow = 'left';
         break;
       case 'left':
         style = {
-          top: Math.max(16, rect.top + rect.height / 2 - tooltipHeight / 2),
-          left: rect.left - tooltipWidth - gap,
+          top: Math.max(margin, Math.min(rect.top + rect.height / 2 - tooltipHeight / 2, window.innerHeight - tooltipHeight - margin)),
+          left: Math.max(margin, rect.left - tooltipWidth - gap),
         };
         arrow = 'right';
         break;
