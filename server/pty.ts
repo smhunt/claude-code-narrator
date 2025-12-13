@@ -113,8 +113,11 @@ class PTYManager extends EventEmitter {
       // Detect shell prompt to send post-connect commands
       // Look for common prompt indicators after initial connection
       if (!postConnectSent && (defaultDir || initialCommand)) {
-        // Check for shell prompt patterns ($ % > # or user@host:)
-        if (/[$%>#]\s*$/.test(data) || /@.*:\s*$/.test(data)) {
+        // Check for shell prompt patterns ($ % > # at end of line)
+        // Exclude password prompts which also end with :
+        const isShellPrompt = /[$%>#]\s*$/.test(data);
+        const isPasswordPrompt = /password:/i.test(data);
+        if (isShellPrompt && !isPasswordPrompt) {
           sendPostConnectCommands();
         }
       }

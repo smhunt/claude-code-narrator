@@ -29,19 +29,47 @@ const COMMANDS = [
   { cmd: 'git pull', desc: 'Pull from remote', category: 'git' },
   { cmd: 'git push', desc: 'Push to remote', category: 'git' },
 
-  // Claude Code
-  { cmd: '/help', desc: 'Show Claude Code help', category: 'claude' },
-  { cmd: '/status', desc: 'Show session status', category: 'claude' },
-  { cmd: '/compact', desc: 'Toggle compact mode', category: 'claude' },
-  { cmd: '/clear', desc: 'Clear conversation', category: 'claude' },
-  { cmd: '/config', desc: 'Open configuration', category: 'claude' },
-  { cmd: '/doctor', desc: 'Run diagnostics', category: 'claude' },
-  { cmd: '/init', desc: 'Initialize project', category: 'claude' },
-  { cmd: '/mcp', desc: 'MCP server management', category: 'claude' },
-  { cmd: '/model', desc: 'Change model', category: 'claude' },
-  { cmd: '/permissions', desc: 'Manage permissions', category: 'claude' },
-  { cmd: '/review', desc: 'Review code', category: 'claude' },
-  { cmd: '/vim', desc: 'Toggle vim mode', category: 'claude' },
+  // Claude Code - Session Management
+  { cmd: '/help', desc: 'Show all slash commands', category: 'claude' },
+  { cmd: '/clear', desc: 'Clear conversation history', category: 'claude' },
+  { cmd: '/compact', desc: 'Compact conversation to save tokens', category: 'claude' },
+  { cmd: '/resume', desc: 'Resume previous conversation', category: 'claude' },
+  { cmd: '/rewind', desc: 'Rewind to previous state', category: 'claude' },
+  { cmd: '/exit', desc: 'Exit Claude Code session', category: 'claude' },
+  { cmd: '/export', desc: 'Export conversation to file', category: 'claude' },
+
+  // Claude Code - Configuration
+  { cmd: '/model', desc: 'Change AI model (opus/sonnet/haiku)', category: 'claude' },
+  { cmd: '/status', desc: 'Show version, model, account info', category: 'claude' },
+  { cmd: '/config', desc: 'Open settings interface', category: 'claude' },
+  { cmd: '/permissions', desc: 'View/update tool permissions', category: 'claude' },
+  { cmd: '/sandbox', desc: 'Enable sandboxed bash mode', category: 'claude' },
+
+  // Claude Code - Memory & Context
+  { cmd: '/memory', desc: 'Edit CLAUDE.md memory files', category: 'claude' },
+  { cmd: '/context', desc: 'Visualize token usage', category: 'claude' },
+  { cmd: '/init', desc: 'Initialize project with CLAUDE.md', category: 'claude' },
+  { cmd: '/add-dir', desc: 'Add working directories', category: 'claude' },
+
+  // Claude Code - Monitoring
+  { cmd: '/cost', desc: 'Show token usage and costs', category: 'claude' },
+  { cmd: '/stats', desc: 'View daily usage stats', category: 'claude' },
+  { cmd: '/doctor', desc: 'Check Claude Code health', category: 'claude' },
+  { cmd: '/todos', desc: 'List TODO items', category: 'claude' },
+  { cmd: '/bashes', desc: 'List background tasks', category: 'claude' },
+
+  // Claude Code - Integration
+  { cmd: '/mcp', desc: 'Manage MCP servers', category: 'claude' },
+  { cmd: '/agents', desc: 'Manage custom subagents', category: 'claude' },
+  { cmd: '/ide', desc: 'Manage IDE integrations', category: 'claude' },
+  { cmd: '/pr-comments', desc: 'View PR comments', category: 'claude' },
+
+  // Claude Code - Other
+  { cmd: '/vim', desc: 'Enter vim mode', category: 'claude' },
+  { cmd: '/review', desc: 'Request code review', category: 'claude' },
+  { cmd: '/security-review', desc: 'Security review of changes', category: 'claude' },
+  { cmd: '/bugs', desc: 'Report bugs to Anthropic', category: 'claude' },
+  { cmd: '/release-notes', desc: 'View release notes', category: 'claude' },
 
   // System
   { cmd: 'clear', desc: 'Clear terminal', category: 'sys' },
