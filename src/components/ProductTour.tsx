@@ -80,7 +80,7 @@ export function ProductTour({
     const spaceLeft = rect.left;
     const spaceRight = window.innerWidth - rect.right;
     const spaceTop = rect.top;
-    const spaceBottom = window.innerHeight - rect.bottom;
+    // spaceBottom not currently used but may be needed for future positioning
 
     // If 'left' position would go off-screen, try alternatives
     if (position === 'left' && spaceLeft < tooltipWidth + gap + margin) {

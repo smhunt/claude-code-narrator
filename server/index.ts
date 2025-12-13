@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
+import OpenAI from 'openai';
 import { ptyManager } from './pty.js';
 import { summarize, isAPIAvailable, type DetailLevel } from './summarizer.js';
 import { saveTranscript, loadTranscript, deleteTranscript } from './transcripts.js';
@@ -15,6 +16,13 @@ import {
   getAllSessions,
   deleteSession,
 } from './db.js';
+
+// OpenAI TTS setup
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+type TTSVoice = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
 
 const PORT = 3086;
 
@@ -74,8 +82,45 @@ app.delete('/api/sessions/:id', (req, res) => {
 app.get('/api/status', (_req, res) => {
   res.json({
     apiAvailable: isAPIAvailable(),
+    openaiTTSAvailable: !!openai,
     version: '1.0.0',
   });
+});
+
+// OpenAI TTS endpoint
+app.post('/api/tts', async (req, res) => {
+  if (!openai) {
+    return res.status(503).json({ error: 'OpenAI API key not configured' });
+  }
+
+  const { text, voice = 'nova', speed = 1.0 } = req.body as {
+    text: string;
+    voice?: TTSVoice;
+    speed?: number;
+  };
+
+  if (!text) {
+    return res.status(400).json({ error: 'Text is required' });
+  }
+
+  try {
+    const mp3 = await openai.audio.speech.create({
+      model: 'tts-1',
+      voice,
+      input: text,
+      speed: Math.max(0.25, Math.min(4.0, speed)),
+    });
+
+    const buffer = Buffer.from(await mp3.arrayBuffer());
+    res.set({
+      'Content-Type': 'audio/mpeg',
+      'Content-Length': buffer.length,
+    });
+    res.send(buffer);
+  } catch (error) {
+    console.error('TTS error:', error);
+    res.status(500).json({ error: 'TTS generation failed' });
+  }
 });
 
 // WebSocket handling

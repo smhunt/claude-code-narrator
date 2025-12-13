@@ -38,9 +38,11 @@ function App() {
     resume,
     isSpeaking,
     isPaused,
+    isLoading: ttsLoading,
     voices,
     settings: ttsSettings,
     updateSettings: updateTTSSettings,
+    openaiAvailable,
   } = useTTS();
 
   const {
@@ -340,6 +342,8 @@ function App() {
                   onTTSSettingsChange={updateTTSSettings}
                   voices={voices}
                   isSummarizing={isSummarizing}
+                  ttsLoading={ttsLoading}
+                  openaiAvailable={openaiAvailable}
                   currentTheme={theme}
                   onThemeChange={handleThemeChange}
                 />
@@ -423,6 +427,8 @@ function App() {
                   onTTSSettingsChange={updateTTSSettings}
                   voices={voices}
                   isSummarizing={isSummarizing}
+                  ttsLoading={ttsLoading}
+                  openaiAvailable={openaiAvailable}
                   currentTheme={theme}
                   onThemeChange={handleThemeChange}
                 />

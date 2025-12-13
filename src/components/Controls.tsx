@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { TTSSettings } from '../hooks/useTTS';
+import type { TTSSettings, OpenAIVoice } from '../hooks/useTTS';
+import { OPENAI_VOICES } from '../hooks/useTTS';
 import type { SSHConfig } from '../hooks/useTerminal';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import type { Theme } from '../lib/themes';
@@ -19,6 +20,8 @@ interface ControlsProps {
   onTTSSettingsChange: (settings: Partial<TTSSettings>) => void;
   voices: SpeechSynthesisVoice[];
   isSummarizing: boolean;
+  ttsLoading: boolean;
+  openaiAvailable: boolean;
   currentTheme: Theme;
   onThemeChange: (theme: Theme) => void;
 }
@@ -38,6 +41,8 @@ export function Controls({
   onTTSSettingsChange,
   voices,
   isSummarizing,
+  ttsLoading,
+  openaiAvailable,
   currentTheme,
   onThemeChange,
 }: ControlsProps) {
@@ -190,51 +195,124 @@ export function Controls({
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-theme-secondary">Voice Settings</h3>
 
+        {/* TTS Provider Toggle */}
         <div className="space-y-2">
-          <label className="block text-xs text-theme-muted">Voice</label>
-          <select
-            value={ttsSettings.voiceIndex}
-            onChange={(e) => onTTSSettingsChange({ voiceIndex: Number(e.target.value) })}
-            className="w-full px-3 py-2 bg-theme-tertiary text-theme-primary rounded-lg text-sm border border-theme"
-          >
-            {voices.map((voice, idx) => (
-              <option key={idx} value={idx}>
-                {voice.name} ({voice.lang})
-              </option>
-            ))}
-          </select>
+          <label className="block text-xs text-theme-muted">TTS Engine</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onTTSSettingsChange({ provider: 'browser' })}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
+                ttsSettings.provider === 'browser'
+                  ? 'btn-accent'
+                  : 'bg-theme-tertiary text-theme-secondary hover:text-theme-primary'
+              }`}
+            >
+              Browser
+            </button>
+            <button
+              onClick={() => onTTSSettingsChange({ provider: 'openai' })}
+              disabled={!openaiAvailable}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
+                ttsSettings.provider === 'openai'
+                  ? 'btn-accent'
+                  : 'bg-theme-tertiary text-theme-secondary hover:text-theme-primary'
+              } ${!openaiAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={!openaiAvailable ? 'Add OPENAI_API_KEY to .env' : 'OpenAI TTS'}
+            >
+              OpenAI
+            </button>
+          </div>
+          {ttsLoading && (
+            <div className="text-xs text-theme-muted">Generating audio...</div>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <label className="block text-xs text-theme-muted">
-            Speed: {ttsSettings.rate.toFixed(1)}x
-          </label>
-          <input
-            type="range"
-            min="0.5"
-            max="2"
-            step="0.1"
-            value={ttsSettings.rate}
-            onChange={(e) => onTTSSettingsChange({ rate: Number(e.target.value) })}
-            className="w-full accent-[var(--accent-primary)]"
-          />
-        </div>
+        {/* Browser TTS Settings */}
+        {ttsSettings.provider === 'browser' && (
+          <>
+            <div className="space-y-2">
+              <label className="block text-xs text-theme-muted">Voice</label>
+              <select
+                value={ttsSettings.voiceIndex}
+                onChange={(e) => onTTSSettingsChange({ voiceIndex: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-theme-tertiary text-theme-primary rounded-lg text-sm border border-theme"
+              >
+                {voices.map((voice, idx) => (
+                  <option key={idx} value={idx}>
+                    {voice.name} ({voice.lang})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div className="space-y-2">
-          <label className="block text-xs text-theme-muted">
-            Pitch: {ttsSettings.pitch.toFixed(1)}
-          </label>
-          <input
-            type="range"
-            min="0.5"
-            max="2"
-            step="0.1"
-            value={ttsSettings.pitch}
-            onChange={(e) => onTTSSettingsChange({ pitch: Number(e.target.value) })}
-            className="w-full accent-[var(--accent-primary)]"
-          />
-        </div>
+            <div className="space-y-2">
+              <label className="block text-xs text-theme-muted">
+                Speed: {ttsSettings.rate.toFixed(1)}x
+              </label>
+              <input
+                type="range"
+                min="0.5"
+                max="2"
+                step="0.1"
+                value={ttsSettings.rate}
+                onChange={(e) => onTTSSettingsChange({ rate: Number(e.target.value) })}
+                className="w-full accent-[var(--accent-primary)]"
+              />
+            </div>
 
+            <div className="space-y-2">
+              <label className="block text-xs text-theme-muted">
+                Pitch: {ttsSettings.pitch.toFixed(1)}
+              </label>
+              <input
+                type="range"
+                min="0.5"
+                max="2"
+                step="0.1"
+                value={ttsSettings.pitch}
+                onChange={(e) => onTTSSettingsChange({ pitch: Number(e.target.value) })}
+                className="w-full accent-[var(--accent-primary)]"
+              />
+            </div>
+          </>
+        )}
+
+        {/* OpenAI TTS Settings */}
+        {ttsSettings.provider === 'openai' && (
+          <>
+            <div className="space-y-2">
+              <label className="block text-xs text-theme-muted">Voice</label>
+              <select
+                value={ttsSettings.openaiVoice}
+                onChange={(e) => onTTSSettingsChange({ openaiVoice: e.target.value as OpenAIVoice })}
+                className="w-full px-3 py-2 bg-theme-tertiary text-theme-primary rounded-lg text-sm border border-theme"
+              >
+                {OPENAI_VOICES.map((voice) => (
+                  <option key={voice.value} value={voice.value}>
+                    {voice.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs text-theme-muted">
+                Speed: {ttsSettings.openaiSpeed.toFixed(1)}x
+              </label>
+              <input
+                type="range"
+                min="0.25"
+                max="4"
+                step="0.25"
+                value={ttsSettings.openaiSpeed}
+                onChange={(e) => onTTSSettingsChange({ openaiSpeed: Number(e.target.value) })}
+                className="w-full accent-[var(--accent-primary)]"
+              />
+            </div>
+          </>
+        )}
+
+        {/* Shared: Volume */}
         <div className="space-y-2">
           <label className="block text-xs text-theme-muted">
             Volume: {Math.round(ttsSettings.volume * 100)}%

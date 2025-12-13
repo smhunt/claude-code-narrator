@@ -1,10 +1,18 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
+export type TTSProvider = 'browser' | 'openai';
+export type OpenAIVoice = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+
 export interface TTSSettings {
+  provider: TTSProvider;
+  // Browser TTS settings
   rate: number;
   pitch: number;
   volume: number;
   voiceIndex: number;
+  // OpenAI TTS settings
+  openaiVoice: OpenAIVoice;
+  openaiSpeed: number;
 }
 
 export interface UseTTSReturn {
@@ -14,16 +22,32 @@ export interface UseTTSReturn {
   resume: () => void;
   isSpeaking: boolean;
   isPaused: boolean;
+  isLoading: boolean;
   voices: SpeechSynthesisVoice[];
   settings: TTSSettings;
   updateSettings: (settings: Partial<TTSSettings>) => void;
+  openaiAvailable: boolean;
 }
 
+const OPENAI_VOICES: { value: OpenAIVoice; label: string }[] = [
+  { value: 'nova', label: 'Nova (Female)' },
+  { value: 'alloy', label: 'Alloy (Neutral)' },
+  { value: 'echo', label: 'Echo (Male)' },
+  { value: 'fable', label: 'Fable (British)' },
+  { value: 'onyx', label: 'Onyx (Deep Male)' },
+  { value: 'shimmer', label: 'Shimmer (Female)' },
+];
+
+export { OPENAI_VOICES };
+
 const DEFAULT_SETTINGS: TTSSettings = {
+  provider: 'browser',
   rate: 1.0,
   pitch: 1.0,
   volume: 1.0,
   voiceIndex: 0,
+  openaiVoice: 'nova',
+  openaiSpeed: 1.0,
 };
 
 const STORAGE_KEY = 'claude-narrator-tts-settings';
@@ -48,16 +72,32 @@ function saveSettings(settings: TTSSettings): void {
   }
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3086`;
+
 export function useTTS(): UseTTSReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [settings, setSettings] = useState<TTSSettings>(loadSettings);
+  const [openaiAvailable, setOpenaiAvailable] = useState(false);
+
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentTextRef = useRef<string>('');
   const isRestartingRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const isPausedRef = useRef(false);
+
+  // Check if OpenAI TTS is available
+  useEffect(() => {
+    fetch(`${API_BASE}/api/status`)
+      .then((res) => res.json())
+      .then((data) => {
+        setOpenaiAvailable(data.openaiTTSAvailable || false);
+      })
+      .catch(() => setOpenaiAvailable(false));
+  }, []);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -68,14 +108,14 @@ export function useTTS(): UseTTSReturn {
     isPausedRef.current = isPaused;
   }, [isPaused]);
 
-  // Poll speechSynthesis state to keep React state in sync
-  // This handles edge cases where callbacks don't fire reliably
+  // Poll speechSynthesis state for browser TTS
   useEffect(() => {
+    if (settings.provider !== 'browser') return;
+
     const syncState = () => {
       const speaking = speechSynthesis.speaking;
       const paused = speechSynthesis.paused;
 
-      // Only update if we're not in the middle of a restart
       if (!isRestartingRef.current) {
         if (speaking && !isSpeakingRef.current) {
           setIsSpeaking(true);
@@ -91,17 +131,15 @@ export function useTTS(): UseTTSReturn {
       }
     };
 
-    // Poll every 100ms
     const interval = setInterval(syncState, 100);
     return () => clearInterval(interval);
-  }, []);
+  }, [settings.provider]);
 
   useEffect(() => {
     const loadVoices = () => {
       const availableVoices = speechSynthesis.getVoices();
       setVoices(availableVoices);
 
-      // Prefer an English voice by default
       const englishIndex = availableVoices.findIndex(
         (v) => v.lang.startsWith('en') && v.localService
       );
@@ -118,14 +156,13 @@ export function useTTS(): UseTTSReturn {
     };
   }, []);
 
-  const speakWithSettings = useCallback(
+  // Browser TTS speak
+  const speakBrowser = useCallback(
     (text: string, currentSettings: TTSSettings, isRestart = false) => {
-      // Mark that we're restarting to prevent polling interference
       if (isRestart) {
         isRestartingRef.current = true;
       }
 
-      // Stop any current speech
       speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
@@ -144,7 +181,6 @@ export function useTTS(): UseTTSReturn {
       };
 
       utterance.onend = () => {
-        // Don't reset state if we're in the middle of a restart
         if (!isRestartingRef.current) {
           setIsSpeaking(false);
           setIsPaused(false);
@@ -165,19 +201,87 @@ export function useTTS(): UseTTSReturn {
     [voices]
   );
 
-  const speak = useCallback(
-    (text: string) => {
-      speakWithSettings(text, settings);
+  // OpenAI TTS speak
+  const speakOpenAI = useCallback(
+    async (text: string, currentSettings: TTSSettings) => {
+      setIsLoading(true);
+
+      try {
+        const response = await fetch(`${API_BASE}/api/tts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            voice: currentSettings.openaiVoice,
+            speed: currentSettings.openaiSpeed,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('TTS request failed');
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+
+        // Stop any existing audio
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+        }
+
+        const audio = new Audio(url);
+        audio.volume = currentSettings.volume;
+        audioRef.current = audio;
+        currentTextRef.current = text;
+
+        audio.onplay = () => {
+          setIsLoading(false);
+          setIsSpeaking(true);
+          setIsPaused(false);
+        };
+
+        audio.onended = () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          currentTextRef.current = '';
+          URL.revokeObjectURL(url);
+        };
+
+        audio.onerror = () => {
+          setIsLoading(false);
+          setIsSpeaking(false);
+          setIsPaused(false);
+          URL.revokeObjectURL(url);
+        };
+
+        await audio.play();
+      } catch (error) {
+        console.error('OpenAI TTS error:', error);
+        setIsLoading(false);
+        setIsSpeaking(false);
+      }
     },
-    [settings, speakWithSettings]
+    []
   );
 
-  // Track previous settings to detect actual changes
+  const speak = useCallback(
+    (text: string) => {
+      if (settings.provider === 'openai') {
+        speakOpenAI(text, settings);
+      } else {
+        speakBrowser(text, settings);
+      }
+    },
+    [settings, speakBrowser, speakOpenAI]
+  );
+
+  // Track previous settings for browser TTS real-time updates
   const prevSettingsRef = useRef<TTSSettings | null>(null);
 
-  // Re-apply settings in real-time when they change during speech
   useEffect(() => {
-    // Check if settings actually changed (not just a re-render)
+    if (settings.provider !== 'browser') return;
+
     const prev = prevSettingsRef.current;
     const settingsChanged = prev !== null && (
       prev.rate !== settings.rate ||
@@ -187,28 +291,54 @@ export function useTTS(): UseTTSReturn {
     );
     prevSettingsRef.current = settings;
 
-    // Only restart if settings changed AND we're currently speaking
     if (settingsChanged && isSpeakingRef.current && currentTextRef.current && !isPausedRef.current) {
-      speakWithSettings(currentTextRef.current, settings, true);
+      speakBrowser(currentTextRef.current, settings, true);
     }
-  }, [settings, speakWithSettings]);
+  }, [settings, speakBrowser]);
+
+  // Update OpenAI audio volume in real-time
+  useEffect(() => {
+    if (settings.provider === 'openai' && audioRef.current) {
+      audioRef.current.volume = settings.volume;
+    }
+  }, [settings.volume, settings.provider]);
 
   const stop = useCallback(() => {
-    speechSynthesis.cancel();
+    if (settings.provider === 'openai') {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    } else {
+      speechSynthesis.cancel();
+    }
     currentTextRef.current = '';
     setIsSpeaking(false);
     setIsPaused(false);
-  }, []);
+    setIsLoading(false);
+  }, [settings.provider]);
 
   const pause = useCallback(() => {
-    speechSynthesis.pause();
+    if (settings.provider === 'openai') {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    } else {
+      speechSynthesis.pause();
+    }
     setIsPaused(true);
-  }, []);
+  }, [settings.provider]);
 
   const resume = useCallback(() => {
-    speechSynthesis.resume();
+    if (settings.provider === 'openai') {
+      if (audioRef.current) {
+        audioRef.current.play();
+      }
+    } else {
+      speechSynthesis.resume();
+    }
     setIsPaused(false);
-  }, []);
+  }, [settings.provider]);
 
   const updateSettings = useCallback((newSettings: Partial<TTSSettings>) => {
     setSettings((prev) => {
@@ -225,8 +355,10 @@ export function useTTS(): UseTTSReturn {
     resume,
     isSpeaking,
     isPaused,
+    isLoading,
     voices,
     settings,
     updateSettings,
+    openaiAvailable,
   };
 }
