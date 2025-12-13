@@ -3,9 +3,20 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.2.1';
+const APP_VERSION = '0.2.2';
 
 const changelog = [
+  {
+    version: '0.2.2',
+    date: '2025-12-12',
+    changes: [
+      'Product tour: 7-step guided walkthrough for new users',
+      'Theme switcher with 10 color themes (Dracula, Nord, Tokyo Night, etc.)',
+      'Themes persist to localStorage',
+      'CSS variables for consistent theming',
+      'Mobile-responsive tour positioning',
+    ],
+  },
   {
     version: '0.2.1',
     date: '2025-12-12',

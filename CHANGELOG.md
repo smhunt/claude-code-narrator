@@ -14,6 +14,21 @@
 
 ---
 
+## [0.2.2] - 2025-12-12
+
+### Added
+- **Product Tour**: 7-step guided walkthrough for new users
+  - Auto-starts on first visit, restart via "?" button in header
+  - Spotlight highlighting of UI elements
+  - Progress dots and keyboard navigation (arrows, Enter, Escape)
+  - Mobile-responsive positioning
+- **Theme Switcher**: 10 color themes with live preview
+  - Midnight (default), Tokyo Night, Dracula, Nord, Solarized Dark
+  - Monokai, Gruvbox, One Dark, Catppuccin Mocha, Light Sepia
+  - Color preview swatches in dropdown
+  - Persists selection to localStorage
+- CSS variables for consistent theming across components
+
 ## [0.2.1] - 2025-12-12
 
 ### Added
