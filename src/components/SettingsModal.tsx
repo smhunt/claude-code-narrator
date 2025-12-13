@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import type { TTSSettings, OpenAIVoice } from '../hooks/useTTS';
 import { OPENAI_VOICES } from '../hooks/useTTS';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import type { Theme } from '../lib/themes';
+import { loadSSHPresets, saveSSHPresets, type SSHPreset } from '../lib/sshPresets';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -28,6 +30,23 @@ export function SettingsModal({
   currentTheme,
   onThemeChange,
 }: SettingsModalProps) {
+  const [presets, setPresets] = useState<SSHPreset[]>([]);
+  const [editingPreset, setEditingPreset] = useState<SSHPreset | null>(null);
+
+  // Load presets when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setPresets(loadSSHPresets());
+    }
+  }, [isOpen]);
+
+  const handleSavePreset = (preset: SSHPreset) => {
+    const updated = presets.map(p => p.id === preset.id ? preset : p);
+    setPresets(updated);
+    saveSSHPresets(updated);
+    setEditingPreset(null);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -215,6 +234,118 @@ export function SettingsModal({
               Theme
             </h3>
             <ThemeSwitcher currentTheme={currentTheme} onThemeChange={onThemeChange} />
+          </section>
+
+          {/* Connection Presets Section */}
+          <section>
+            <h3 className="text-sm font-semibold text-theme-primary mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Connection Presets
+            </h3>
+
+            <div className="space-y-3">
+              {presets.map((preset) => (
+                <div key={preset.id} className="bg-theme-tertiary rounded-lg p-3">
+                  {editingPreset?.id === preset.id ? (
+                    // Edit mode
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={editingPreset.name}
+                          onChange={(e) => setEditingPreset({ ...editingPreset, name: e.target.value })}
+                          className="flex-1 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                          placeholder="Name"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={editingPreset.user}
+                          onChange={(e) => setEditingPreset({ ...editingPreset, user: e.target.value })}
+                          className="w-24 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                          placeholder="User"
+                        />
+                        <input
+                          type="text"
+                          value={editingPreset.host}
+                          onChange={(e) => setEditingPreset({ ...editingPreset, host: e.target.value })}
+                          className="flex-1 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                          placeholder="Host"
+                        />
+                        <input
+                          type="number"
+                          value={editingPreset.port}
+                          onChange={(e) => setEditingPreset({ ...editingPreset, port: Number(e.target.value) })}
+                          className="w-16 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-theme-muted mb-1">Default Directory</label>
+                        <input
+                          type="text"
+                          value={editingPreset.defaultDir || ''}
+                          onChange={(e) => setEditingPreset({ ...editingPreset, defaultDir: e.target.value })}
+                          className="w-full px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                          placeholder="~/Code"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-theme-muted mb-1">Startup Command</label>
+                        <input
+                          type="text"
+                          value={editingPreset.initialCommand || ''}
+                          onChange={(e) => setEditingPreset({ ...editingPreset, initialCommand: e.target.value })}
+                          className="w-full px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                          placeholder="claude"
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => setEditingPreset(null)}
+                          className="px-3 py-1 text-xs bg-theme-primary text-theme-secondary rounded hover:text-theme-primary"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSavePreset(editingPreset)}
+                          className="px-3 py-1 text-xs btn-accent rounded"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // View mode
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium text-theme-primary text-sm">{preset.name}</div>
+                        <div className="text-xs text-theme-muted">{preset.user}@{preset.host}:{preset.port}</div>
+                        {preset.defaultDir && (
+                          <div className="text-xs text-theme-muted mt-1">
+                            <span className="text-purple-400">cd</span> {preset.defaultDir}
+                            {preset.initialCommand && (
+                              <span> → <span className="text-green-400">{preset.initialCommand}</span></span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setEditingPreset(preset)}
+                        className="p-1 text-theme-muted hover:text-theme-primary"
+                        title="Edit preset"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </section>
         </div>
       </div>
