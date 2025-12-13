@@ -87,6 +87,41 @@ app.get('/api/status', (_req, res) => {
   });
 });
 
+// Read and summarize Claude export file
+app.post('/api/claude-export', async (req, res) => {
+  const { filePath, level = 'medium' } = req.body as { filePath: string; level?: DetailLevel };
+
+  if (!filePath) {
+    return res.status(400).json({ error: 'File path is required' });
+  }
+
+  try {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+
+    // Resolve the path (handle ~ for home directory)
+    let resolvedPath = filePath;
+    if (filePath.startsWith('~')) {
+      resolvedPath = path.join(process.env.HOME || '', filePath.slice(1));
+    }
+
+    // Read the Claude export file
+    const content = await fs.readFile(resolvedPath, 'utf-8');
+
+    if (!content || content.length < 10) {
+      return res.status(404).json({ error: 'Export file is empty or not found' });
+    }
+
+    // Summarize the Claude transcript
+    const summary = await summarize(content, level);
+
+    res.json({ summary, level, source: 'claude-export', chars: content.length });
+  } catch (error) {
+    console.error('Claude export error:', error);
+    res.status(500).json({ error: 'Failed to read or summarize Claude export' });
+  }
+});
+
 // OpenAI TTS endpoint
 app.post('/api/tts', async (req, res) => {
   if (!openai) {

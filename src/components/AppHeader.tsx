@@ -16,6 +16,7 @@ interface AppHeaderProps {
   detailLevel: DetailLevel;
   onDetailLevelChange: (level: DetailLevel) => void;
   onSummarize: (level: DetailLevel) => void;
+  onClaudeExport: () => void;
   isSummarizing: boolean;
   hasSummary: boolean;
   // Playback
@@ -40,6 +41,7 @@ export function AppHeader({
   detailLevel,
   onDetailLevelChange,
   onSummarize,
+  onClaudeExport,
   isSummarizing,
   hasSummary,
   isSpeaking,
@@ -159,14 +161,24 @@ export function AppHeader({
             </button>
           ))}
           {sessionId && (
-            <button
-              onClick={() => onSummarize(detailLevel)}
-              disabled={isSummarizing}
-              className="px-2 py-1 btn-accent text-xs rounded disabled:opacity-50"
-              title="Summarize"
-            >
-              {isSummarizing ? '...' : '∑'}
-            </button>
+            <>
+              <button
+                onClick={() => onSummarize(detailLevel)}
+                disabled={isSummarizing}
+                className="px-2 py-1 btn-accent text-xs rounded disabled:opacity-50"
+                title="Summarize terminal output"
+              >
+                {isSummarizing ? '...' : '∑'}
+              </button>
+              <button
+                onClick={onClaudeExport}
+                disabled={isSummarizing}
+                className="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs rounded disabled:opacity-50"
+                title="Export & summarize Claude transcript"
+              >
+                {isSummarizing ? '...' : 'Claude'}
+              </button>
+            </>
           )}
         </div>
 

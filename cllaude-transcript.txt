@@ -1,0 +1,570 @@
+
+╭─── Claude Code v2.0.69 ──────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│                 Welcome back Sean!                 │ started                 │
+│                                                    │ Run /init to create a … │
+│                     * ▐▛███▜▌ *                    │ ─────────────────────── │
+│                    * ▝▜█████▛▘ *                   │ Recent activity         │
+│                     *  ▘▘ ▝▝  *                    │ No recent activity      │
+│                                                    │                         │
+│     Opus 4.5 · Claude Max · sean@ecoworks.ca's     │                         │
+│     Organization                                   │                         │
+│             ~/Code/claude-code-narrator            │                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+══════════════════ Conversation compacted · ctrl+o for history ═════════════════
+  ⎿  Read src/hooks/useTerminal.ts (186 lines)
+  ⎿  Read src/lib/sshPresets.ts (83 lines)
+  ⎿  Read src/App.tsx (425 lines)
+  ⎿  Read src/hooks/useTTS.ts (388 lines)
+  ⎿  Read src/components/SideDrawer.tsx (116 lines)
+  ⎿  Plan file referenced (~/.claude/plans/radiant-skipping-parrot.md)
+
+⏺ I'll continue implementing the default directory feature. Let me check the AppHeader and server files to complete this.
+
+⏺ Read(src/components/AppHeader.tsx)
+  ⎿  Read 353 lines
+
+⏺ Read(server/index.ts)
+  ⎿  Read 259 lines
+
+> also add a field for initial  command to run eg: claude 
+
+⏺ I'll add both the default directory and initial command support. Let me update the relevant files.
+
+⏺ Update(src/lib/sshPresets.ts)
+  ⎿  Updated src/lib/sshPresets.ts with 1 addition                       
+        5      user: string;
+        6      port: number;
+        7      defaultDir?: string; // Directory to cd to after 
+            connecting
+        8 +    initialCommand?: string; // Command to run after cd (e.g.,
+          +  'claude')
+        9    }
+       10    
+       11    const STORAGE_KEY = 'claude-narrator-ssh-presets';
+
+⏺ Update(src/lib/sshPresets.ts)
+  ⎿  Updated src/lib/sshPresets.ts with 2 additions
+       19        user: 'seanhunt',
+       20        port: 22,
+       21        defaultDir: '~/Code',
+       22 +      initialCommand: 'claude',
+       23      },
+       24      {
+       25        id: 'imac',
+     ...
+       27        user: 'seanhunt',
+       28        port: 22,
+       29        defaultDir: '~/Code',
+       30 +      initialCommand: 'claude',
+       31      },
+       32    ];
+       33    
+
+⏺ Update(src/hooks/useTerminal.ts)
+  ⎿  Updated src/hooks/useTerminal.ts with 1 addition                    
+        8      user?: string;
+        9      port?: number;
+       10      defaultDir?: string; // Directory to cd to after 
+            connecting
+       11 +    initialCommand?: string; // Command to run after cd (e.g.,
+          +  'claude')
+       12    }
+       13    
+       14    export interface UseTerminalReturn {
+
+⏺ Update(src/components/AppHeader.tsx)
+  ⎿  Updated src/components/AppHeader.tsx with 2 additions 
+       77            host: preset.host,
+       78            user: preset.user,
+       79            port: preset.port,
+       80 +          defaultDir: preset.defaultDir,
+       81 +          initialCommand: preset.initialCommand,
+       82          });
+       83          setShowSSHPanel(false);
+       84        }
+
+⏺ Read(server/pty.ts)
+  ⎿  Read 138 lines
+
+⏺ I'll update the pty.ts to handle the default directory and initial command after SSH connection.
+
+⏺ Update(server/pty.ts)
+  ⎿  Updated server/pty.ts with 2 additions                              
+       14      host: string;
+       15      user?: string;
+       16      port?: number;
+       17 +    defaultDir?: string; // Directory to cd to after 
+          + connecting
+       18 +    initialCommand?: string; // Command to run after cd (e.g.,
+          +  'claude')
+       19    }
+       20    
+       21    class PTYManager extends EventEmitter {
+
+⏺ Update(server/pty.ts)
+  ⎿  Updated server/pty.ts with 31 additions and 1 removal              
+       55      }
+       56    
+       57      spawnSSH(sessionId: string, options: SSHOptions): 
+            PTYSession {
+       58 -      const { host, user, port = 22 } = options;
+       58 +      const { host, user, port = 22, 
+          +  defaultDir, initialCommand } = options;
+       59    
+       60        // Build SSH command
+       61        const sshArgs: string[] = [];
+     ...
+        85          sshHost: target,
+        86        };
+        87    
+        88 +      // Track if we've sent post-connect commands
+        89 +      let postConnectSent = false;
+        90 +      const sendPostConnectCommands = () => {
+        91 +        if (postConnectSent) return;
+        92 +        postConnectSent = true;
+        93 +  
+        94 +        // Small delay to ensure shell is ready
+        95 +        setTimeout(() => {
+        96 +          // cd to default directory if specified
+        97 +          if (defaultDir) {
+        98 +            ptyProcess.write(`cd ${defaultDir}\r`);
+        99 +          }
+       100 +          // Run initial command if specified (with a brief 
+           + delay after cd)
+       101 +          if (initialCommand) {
+       102 +            setTimeout(() => {
+       103 +              ptyProcess.write(`${initialCommand}\r`);
+       104 +            }, defaultDir ? 300 : 0);
+       105 +          }
+       106 +        }, 500);
+       107 +      };
+       108 +  
+       109        ptyProcess.onData((data) => {
+       110          session.transcript.push(data);
+       111          this.emit('data', sessionId, data);
+       112 +  
+       113 +        // Detect shell prompt to send post-connect commands
+       114 +        // Look for common prompt indicators after initial 
+           + connection
+       115 +        if (!postConnectSent && (defaultDir || 
+           + initialCommand)) {
+       116 +          // Check for shell prompt patterns ($ % > # or 
+           + user@host:)
+       117 +          if (/[$%>#]\s*$/.test(data) || 
+           + /@.*:\s*$/.test(data)) {
+       118 +            sendPostConnectCommands();
+       119 +          }
+       120 +        }
+       121        });
+       122    
+       123        ptyProcess.onExit(({ exitCode }) => {
+
+⏺ Now I need to update the server to pass these new fields.
+
+⏺ Update(server/index.ts)
+  ⎿  Updated server/index.ts with 8 additions and 2 removals             
+       176      });
+       177    
+       178      // Start SSH session
+       179 -    socket.on('terminal:ssh', ({ host, user, port }: { host: 
+           - string; user?: string; port?: number }) => {
+       179 +    socket.on('terminal:ssh', ({ host, user, port, 
+           + defaultDir, initialCommand }: {
+       180 +      host: string;
+       181 +      user?: string;
+       182 +      port?: number;
+       183 +      defaultDir?: string;
+       184 +      initialCommand?: string;
+       185 +    }) => {
+       186        currentSessionId = uuidv4();
+       187        const dbSession = createSession(currentSessionId);
+       188    
+       189        try {
+       190 -        ptyManager.spawnSSH(currentSessionId, { host, user, 
+           -  port });
+       190 +        ptyManager.spawnSSH(currentSessionId, { host, user, 
+           +  port, defaultDir, initialCommand });
+       191    
+       192          socket.emit('session:started', {
+       193            id: currentSessionId,
+
+⏺ Bash(npm run build 2>&1)
+  ⎿  > claud-code-narrator@0.3.0 build
+     > tsc -b && vite build
+     … +16 lines (ctrl+o to expand)
+
+⏺ Build succeeded. Let me restart the server to pick up the changes.
+
+⏺ Bash(lsof -ti :3086 | xargs kill -9 2>/dev/null; sleep 1; npm run    timeout: 
+      server 2>&1 &)                                                   5s
+  ⎿  Running in the background (↓ to manage)
+
+⏺ Bash(lsof -ti :5173 | xargs kill -9 2>/dev/null; sleep 1; npm run   timeout: 
+      dev 2>&1 &)                                                     5s
+  ⎿  Running in the background (↓ to manage)
+
+⏺ Bash(cat /tmp/claude/tasks/b704f63.output && cat
+      /tmp/claude/tasks/b855beb.output)
+  ⎿  > claud-code-narrator@0.3.0 server
+     > tsx server/index.ts
+     … +14 lines (ctrl+o to expand)
+
+⏺ Read(CHANGELOG.md)
+  ⎿  Read 196 lines
+
+> can we safely save teh connection info (including password ideally 
+
+⏺ Let me update the changelog first, then discuss password storage.
+
+⏺ Update(CHANGELOG.md)
+  ⎿  Updated CHANGELOG.md with 24 additions                             
+       14    
+       15    ---
+       16    
+       17 +  ## [0.2.4] - 2025-12-13
+       18 +  
+       19 +  ### Added
+       20 +  - **SSH Presets**: Save and reuse SSH connection 
+          + configurations
+       21 +    - Default presets for HA Server and iMac
+       22 +    - Dropdown selector for quick connections
+       23 +    - Custom connection form for one-off connections
+       24 +    - Default directory option (auto-cd after connect)
+       25 +    - Initial command option (auto-run after cd, e.g., 
+          + 'claude')
+       26 +  - **Terminal-First UI**: Major layout refactor
+       27 +    - Terminal always visible (no more tabs)
+       28 +    - Compact header with inline controls
+       29 +    - Side drawer for history & narration (doesn't block 
+          + terminal)
+       30 +    - Settings moved to modal
+       31 +  - **Click-to-Play Summaries**: Play directly from history 
+          + list by clicking summary tags
+       32 +  - **Transcript Viewer**: Modal to view raw terminal output 
+          + used for AI summarization
+       33 +  
+       34 +  ### Changed
+       35 +  - Header now shows session type (Local/SSH) badge and End 
+          + button
+       36 +  - Detail level (Brief/Standard/Detailed) as compact inline 
+          + buttons
+       37 +  - Playback controls integrated into header
+       38 +  
+       39 +  ---
+       40 +  
+       41    ## [0.2.3] - 2025-12-13
+       42    
+       43    ### Added
+
+⏺ Read(package.json)
+  ⎿  Read 10 lines
+
+⏺ Bash(git add -A && git status)
+  ⎿  On branch master                               
+     Your branch is up to date with 'origin/master'.
+     … +8 lines (ctrl+o to expand)
+
+⏺ Bash(git commit -m "Add SSH preset default directory and initial command
+      support…)
+  ⎿ [master 89dd2a3] Add SSH preset default directory and initial command s
+    upport
+     6 files changed, 75 insertions(+), 3 deletions(-)
+
+
+⏺ Bash(git push)
+  ⎿  To https://github.com/smhunt/claude-code-narrator.git
+        47f944b..89dd2a3  master -> master
+
+⏺ Done! The SSH presets now support:
+  - Default directory - auto-cd to ~/Code after connecting
+  - Initial command - auto-run claude after cd
+
+  Regarding password storage - I'd recommend against it for security reasons. The current implementation relies on SSH keys, which is more secure. If you have SSH keys set up on your Mac, connections are passwordless.
+
+  Quick SSH key setup (if not done already):
+  # Check if you have keys
+  ls ~/.ssh/id_*
+
+  # If not, generate one
+  ssh-keygen -t ed25519
+
+  # Copy to your servers
+  ssh-copy-id seanhunt@10.10.10.24
+  ssh-copy-id seanhunt@10.10.10.154
+
+  If you really need password auth for some reason, there are two options:
+  1. sshpass - we could use sshpass -p 'password' ssh ... but this exposes the password in process lists and localStorage
+  2. SSH Agent - run ssh-add to cache your key passphrase in memory (more secure)
+
+  The app is running at:
+  - Frontend: http://10.10.10.24:3008
+  - API: http://10.10.10.24:3086
+
+  When you connect to an SSH preset, it will automatically cd to ~/Code and run claude once the shell prompt is detected.
+
+> go 
+
+⏺ chrome-devtools - new_page (MCP)(url: "http://10.10.10.24:3008")
+  ⎿  # new_page response                                                   
+     ## Pages
+     0: about:blank
+     … +2 lines (ctrl+o to expand)
+  ⎿ # take_snapshot response                                               
+    ## Latest page snapshot
+    uid=24_0 RootWebArea "claud-code-narrator" url="http://10.10.10.24:3008
+    … +33 lines (ctrl+o to expand)
+
+
+⏺ chrome-devtools - click (MCP)(uid: "24_29")
+  ⎿  # click response                                                      
+     Successfully clicked on the element
+     ## Latest page snapshot
+     … +17 lines (ctrl+o to expand)
+
+⏺ chrome-devtools - click (MCP)(uid: "25_3")
+  ⎿  # click response                                                      
+     Successfully clicked on the element
+     ## Latest page snapshot
+     … +31 lines (ctrl+o to expand)
+
+⏺ chrome-devtools - click (MCP)(uid: "26_13")
+  ⎿  Error: Timed out after waiting 5000ms
+     Cause: Locator.click
+  ⎿ # take_snapshot response                                               
+    ## Latest page snapshot
+    uid=27_0 RootWebArea "claud-code-narrator" url="http://10.10.10.24:3008
+    … +25 lines (ctrl+o to expand)
+
+
+⏺ chrome-devtools - click (MCP)(uid: "27_10")
+  ⎿  # click response                                                      
+     Successfully clicked on the element
+     ## Latest page snapshot
+     … +31 lines (ctrl+o to expand)
+
+⏺ chrome-devtools - click (MCP)(uid: "28_13")
+  ⎿  # click response                                                      
+     Successfully clicked on the element
+     ## Latest page snapshot
+     … +27 lines (ctrl+o to expand)
+  ⎿  # take_screenshot response                                            
+     Took a screenshot of the current page's viewport.
+  ⎿  [Image]
+
+⏺ I see the issue - it's prompting for password, and the auto-commands triggered too early. The prompt detection matched the password prompt incorrectly. Let me fix that.
+
+⏺ Update(server/pty.ts)
+  ⎿  Updated server/pty.ts with 5 additions and 2 removals              
+       113          // Detect shell prompt to send post-connect commands
+       114          // Look for common prompt indicators after initial 
+             connection
+       115          if (!postConnectSent && (defaultDir || 
+             initialCommand)) {
+       116 -          // Check for shell prompt patterns ($ % > # or 
+           -  user@host:)
+       117 -          if (/[$%>#]\s*$/.test(data) || 
+           - /@.*:\s*$/.test(data)) {
+       116 +          // Check for shell prompt patterns ($ % > # at 
+           +  end of line)
+       117 +          // Exclude password prompts which also end with :
+       118 +          const isShellPrompt = /[$%>#]\s*$/.test(data);
+       119 +          const isPasswordPrompt = /password:/i.test(data);
+       120 +          if (isShellPrompt && !isPasswordPrompt) {
+       121              sendPostConnectCommands();
+       122            }
+       123          }
+
+⏺ Bash(lsof -ti :3086 | xargs kill -9 2>/dev/null; sleep 1; npm run    timeout: 
+      server 2>&1 &)                                                   5s
+  ⎿  Running in the background (↓ to manage)
+
+⏺ Fixed the prompt detection. The SSH connection is asking for your password - you'll need to type it in the terminal. Once authenticated, the auto-cd and claude command will run.
+
+  If you want passwordless SSH, run this on your Mac:
+  ssh-copy-id seanhunt@10.10.10.24
+
+  The app is working - just type your password in the terminal to continue the SSH session.
+
+> add a research agent to create and add a category or autocomplete command 
+for claude code (25 most frequesntly used 
+
+⏺ claude-code-guide(Research Claude Code commands)
+  ⎿  Done (5 tool uses · 28.7k tokens · 51s)                               
+
+⏺ Now let me find the QuickCommands component and add these Claude Code commands.
+
+⏺ Read(src/components/QuickCommands.tsx)
+  ⎿  Read 190 lines
+
+⏺ Update(src/components/QuickCommands.tsx)
+  ⎿  Updated src/components/QuickCommands.tsx with 41 additions and 13     
+     removals
+       29      { cmd: 'git pull', desc: 'Pull from remote', category: 
+            'git' },
+       30      { cmd: 'git push', desc: 'Push to remote', category: 'git'
+             },
+       31    
+       32 -    // Claude Code
+       33 -    { cmd: '/help', desc: 'Show Claude Code help
+          -  ', category: 'claude' },
+       34 -    { cmd: '/status', desc: 'Show session status
+          -  ', category: 'claude' },
+       35 -    { cmd: '/compact', desc: 'Toggle compact mode
+          -  ', category: 'claude' },
+       36 -    { cmd: '/clear', desc: 'Clear 
+          -  conversation', category: 'claude' },
+       37 -    { cmd: '/config', desc: 'Open configuration
+          -  ', category: 'claude' },
+       38 -    { cmd: '/doctor', desc: 'Run diagnostics
+          -  ', category: 'claude' },
+       39 -    { cmd: '/init', desc: 'Initialize project
+          -  ', category: 'claude' },
+       40 -    { cmd: '/mcp', desc: 'MCP server management', category: 
+          - 'claude' },
+       41 -    { cmd: '/model', desc: 'Change model', category: 'claude' 
+          - },
+       42 -    { cmd: '/permissions', desc: 'Manage permissions', 
+          - category: 'claude' },
+       43 -    { cmd: '/review', desc: 'Review code', category: 'claude' 
+          - },
+       44 -    { cmd: '/vim', desc: 'Toggle vim mode', category: 'claude'
+          -  },
+       32 +    // Claude Code - Session Management
+       33 +    { cmd: '/help', desc: 'Show all slash commands
+          +  ', category: 'claude' },
+       34 +    { cmd: '/clear', desc: 'Clear conversation history
+          +  ', category: 'claude' },
+       35 +    { cmd: '/compact', desc: 'Compact conversation 
+          +  to save tokens', category: 'claude' },
+       36 +    { cmd: '/resume', desc: 'Resume previous 
+          +  conversation', category: 'claude' },
+       37 +    { cmd: '/rewind', desc: 'Rewind to previous state
+          +  ', category: 'claude' },
+       38 +    { cmd: '/exit', desc: 'Exit Claude Code session
+          +  ', category: 'claude' },
+       39 +    { cmd: '/export', desc: 'Export conversation to file
+          +  ', category: 'claude' },
+       40    
+       41 +    // Claude Code - Configuration
+       42 +    { cmd: '/model', desc: 'Change AI model 
+          + (opus/sonnet/haiku)', category: 'claude' },
+       43 +    { cmd: '/status', desc: 'Show version, model, account 
+          + info', category: 'claude' },
+       44 +    { cmd: '/config', desc: 'Open settings interface', 
+          + category: 'claude' },
+       45 +    { cmd: '/permissions', desc: 'View/update tool 
+          + permissions', category: 'claude' },
+       46 +    { cmd: '/sandbox', desc: 'Enable sandboxed bash mode', 
+          + category: 'claude' },
+       47 +  
+       48 +    // Claude Code - Memory & Context
+       49 +    { cmd: '/memory', desc: 'Edit CLAUDE.md memory files', 
+          + category: 'claude' },
+       50 +    { cmd: '/context', desc: 'Visualize token usage', 
+          + category: 'claude' },
+       51 +    { cmd: '/init', desc: 'Initialize project with CLAUDE.md',
+          +  category: 'claude' },
+       52 +    { cmd: '/add-dir', desc: 'Add working directories', 
+          + category: 'claude' },
+       53 +  
+       54 +    // Claude Code - Monitoring
+       55 +    { cmd: '/cost', desc: 'Show token usage and costs', 
+          + category: 'claude' },
+       56 +    { cmd: '/stats', desc: 'View daily usage stats', category:
+          +  'claude' },
+       57 +    { cmd: '/doctor', desc: 'Check Claude Code health', 
+          + category: 'claude' },
+       58 +    { cmd: '/todos', desc: 'List TODO items', category: 
+          + 'claude' },
+       59 +    { cmd: '/bashes', desc: 'List background tasks', category:
+          +  'claude' },
+       60 +  
+       61 +    // Claude Code - Integration
+       62 +    { cmd: '/mcp', desc: 'Manage MCP servers', category: 
+          + 'claude' },
+       63 +    { cmd: '/agents', desc: 'Manage custom subagents', 
+          + category: 'claude' },
+       64 +    { cmd: '/ide', desc: 'Manage IDE integrations', category: 
+          + 'claude' },
+       65 +    { cmd: '/pr-comments', desc: 'View PR comments', category:
+          +  'claude' },
+       66 +  
+       67 +    // Claude Code - Other
+       68 +    { cmd: '/vim', desc: 'Enter vim mode', category: 'claude' 
+          + },
+       69 +    { cmd: '/review', desc: 'Request code review', category: 
+          + 'claude' },
+       70 +    { cmd: '/security-review', desc: 'Security review of 
+          + changes', category: 'claude' },
+       71 +    { cmd: '/bugs', desc: 'Report bugs to Anthropic', 
+          + category: 'claude' },
+       72 +    { cmd: '/release-notes', desc: 'View release notes', 
+          + category: 'claude' },
+       73 +  
+       74      // System
+       75      { cmd: 'clear', desc: 'Clear terminal', category: 'sys' },
+       76      { cmd: 'exit', desc: 'Exit session', category: 'sys' },
+
+⏺ Bash(npm run build 2>&1)
+  ⎿  > claud-code-narrator@0.3.0 build
+     > tsc -b && vite build
+     … +16 lines (ctrl+o to expand)
+
+⏺ Bash(git add -A && git commit -m "Add 25 Claude Code slash commands to
+      autocomplete…)
+  ⎿  [master 862b630] Add 25 Claude Code slash commands to autocomplete
+      2 files changed, 46 insertions(+), 15 deletions(-)
+     To https://github.com/smhunt/claude-code-narrator.git
+        89dd2a3..862b630  master -> master
+
+⏺ chrome-devtools - navigate_page (MCP)(type: "reload")
+  ⎿  # navigate_page response                                              
+     Successfully reloaded the page.
+     ## Pages
+     … +5 lines (ctrl+o to expand)
+  ⎿ # take_snapshot response                                               
+    ## Latest page snapshot
+    uid=30_0 RootWebArea "claud-code-narrator" url="http://10.10.10.24:3008
+    … +16 lines (ctrl+o to expand)
+
+
+⏺ chrome-devtools - click (MCP)(uid: "30_2")
+  ⎿  # click response                                                      
+     Successfully clicked on the element
+     ## Latest page snapshot
+     … +27 lines (ctrl+o to expand)
+
+⏺ chrome-devtools - fill (MCP)(uid: "31_16", value: "/")
+  ⎿  # fill response                                                       
+     Successfully filled out the element
+     ## Latest page snapshot
+     … +33 lines (ctrl+o to expand)
+  ⎿  # take_screenshot response                                            
+     Took a screenshot of the current page's viewport.
+  ⎿  [Image]
+
+⏺ Done! Added 25 Claude Code slash commands to autocomplete. Type / to see them all:
+
+  Session Management:
+  - /help, /clear, /compact, /resume, /rewind, /exit, /export
+
+  Configuration:
+  - /model, /status, /config, /permissions, /sandbox
+
+  Memory & Context:
+  - /memory, /context, /init, /add-dir
+
+  Monitoring:
+  - /cost, /stats, /doctor, /todos, /bashes
+
+  Integration:
+  - /mcp, /agents, /ide, /pr-comments
+
+  Other:
+  - /vim, /review, /security-review, /bugs, /release-notes
+
+  Commands show in purple with descriptions. The autocomplete filters as you type.
+
+
+

@@ -166,6 +166,47 @@ function App() {
     [sessionId, requestSummary]
   );
 
+  // Export Claude transcript and summarize
+  const handleClaudeExport = useCallback(async () => {
+    if (!sessionId) return;
+
+    const exportFileName = `narrator-export-${Date.now()}.txt`;
+
+    // Send export command to Claude Code
+    sendCommand(`/export ${exportFileName}\r`);
+    toast.info('Exporting Claude transcript...');
+    setIsSummarizing(true);
+
+    // Wait for export to complete
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    try {
+      // Call server to read and summarize the export
+      const response = await fetch(`${BACKEND_URL}/api/claude-export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filePath: exportFileName,
+          level: detailLevel,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to summarize Claude export');
+      }
+
+      const data = await response.json();
+      setCurrentSummary(data.summary);
+      setSummaryLevel(detailLevel);
+      toast.success(`Claude transcript summarized (${data.chars} chars)`);
+    } catch (error) {
+      console.error('Claude export error:', error);
+      toast.error('Failed to export Claude transcript');
+    } finally {
+      setIsSummarizing(false);
+    }
+  }, [sessionId, sendCommand, detailLevel, toast]);
+
   const handleSelectSession = useCallback(
     async (session: Session) => {
       setSelectedSession(session);
@@ -301,6 +342,7 @@ function App() {
         detailLevel={detailLevel}
         onDetailLevelChange={setDetailLevel}
         onSummarize={handleSummarize}
+        onClaudeExport={handleClaudeExport}
         isSummarizing={isSummarizing}
         hasSummary={!!currentSummary}
         isSpeaking={isSpeaking}
