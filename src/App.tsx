@@ -262,10 +262,15 @@ function App() {
       if (summary) {
         setCurrentSummary(summary);
         setSummaryLevel(level);
+        // On mobile, switch to terminal tab to see the player
+        if (isMobile) {
+          setMobileTab('terminal');
+        }
+        toast.info('Playing narration...');
         setTimeout(() => speak(summary), 100);
       }
     },
-    [speak]
+    [speak, isMobile, toast]
   );
 
   // View transcript modal
