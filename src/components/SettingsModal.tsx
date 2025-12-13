@@ -4,6 +4,7 @@ import { OPENAI_VOICES } from '../hooks/useTTS';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import type { Theme } from '../lib/themes';
 import { loadSSHPresets, saveSSHPresets, type SSHPreset } from '../lib/sshPresets';
+import { BACKEND_URL } from '../lib/socket';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -17,6 +18,9 @@ interface SettingsModalProps {
   // Theme
   currentTheme: Theme;
   onThemeChange: (theme: Theme) => void;
+  // Connection
+  onConnectPreset?: (preset: SSHPreset) => void;
+  isConnected?: boolean;
 }
 
 export function SettingsModal({
@@ -29,19 +33,57 @@ export function SettingsModal({
   openaiAvailable,
   currentTheme,
   onThemeChange,
+  onConnectPreset,
+  isConnected,
 }: SettingsModalProps) {
   const [presets, setPresets] = useState<SSHPreset[]>([]);
   const [editingPreset, setEditingPreset] = useState<SSHPreset | null>(null);
+  const [directories, setDirectories] = useState<string[]>(['~/Code']);
+  const [showDirDropdown, setShowDirDropdown] = useState(false);
 
-  // Load presets when modal opens
+  // Load presets and directories when modal opens
   useEffect(() => {
     if (isOpen) {
       setPresets(loadSSHPresets());
+      // Fetch directories from server
+      fetch(`${BACKEND_URL}/api/directories`)
+        .then(res => res.json())
+        .then(data => setDirectories(data.directories || ['~/Code']))
+        .catch(() => setDirectories(['~/Code']));
     }
   }, [isOpen]);
 
+  // Filter directories based on input
+  const filteredDirs = directories.filter(dir =>
+    dir.toLowerCase().includes((editingPreset?.defaultDir || '').toLowerCase())
+  );
+
   const handleSavePreset = (preset: SSHPreset) => {
-    const updated = presets.map(p => p.id === preset.id ? preset : p);
+    // Check if this is a new preset or updating existing
+    const exists = presets.some(p => p.id === preset.id);
+    const updated = exists
+      ? presets.map(p => p.id === preset.id ? preset : p)
+      : [...presets, preset];
+    setPresets(updated);
+    saveSSHPresets(updated);
+    setEditingPreset(null);
+  };
+
+  const handleAddNew = () => {
+    const newPreset: SSHPreset = {
+      id: `preset-${Date.now()}`,
+      name: 'New Connection',
+      host: '',
+      user: '',
+      port: 22,
+      defaultDir: '~/Code',
+      initialCommand: 'claude',
+    };
+    setEditingPreset(newPreset);
+  };
+
+  const handleDeletePreset = (id: string) => {
+    const updated = presets.filter(p => p.id !== id);
     setPresets(updated);
     saveSSHPresets(updated);
     setEditingPreset(null);
@@ -238,14 +280,120 @@ export function SettingsModal({
 
           {/* Connection Presets Section */}
           <section>
-            <h3 className="text-sm font-semibold text-theme-primary mb-3 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Connection Presets
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-theme-primary flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Connection Presets
+              </h3>
+              <button
+                onClick={handleAddNew}
+                className="px-2 py-1 text-xs btn-accent rounded flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add New
+              </button>
+            </div>
 
             <div className="space-y-3">
+              {/* Show new preset form if editing a new one */}
+              {editingPreset && !presets.some(p => p.id === editingPreset.id) && (
+                <div className="bg-theme-tertiary rounded-lg p-3 border-2 border-dashed border-[var(--accent-primary)]">
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editingPreset.name}
+                        onChange={(e) => setEditingPreset({ ...editingPreset, name: e.target.value })}
+                        className="flex-1 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                        placeholder="Connection Name"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editingPreset.user}
+                        onChange={(e) => setEditingPreset({ ...editingPreset, user: e.target.value })}
+                        className="w-24 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                        placeholder="User"
+                      />
+                      <input
+                        type="text"
+                        value={editingPreset.host}
+                        onChange={(e) => setEditingPreset({ ...editingPreset, host: e.target.value })}
+                        className="flex-1 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                        placeholder="Host (IP or hostname)"
+                      />
+                      <input
+                        type="number"
+                        value={editingPreset.port}
+                        onChange={(e) => setEditingPreset({ ...editingPreset, port: Number(e.target.value) })}
+                        className="w-16 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                      />
+                    </div>
+                    <div className="relative">
+                      <label className="block text-xs text-theme-muted mb-1">Default Directory</label>
+                      <input
+                        type="text"
+                        value={editingPreset.defaultDir || ''}
+                        onChange={(e) => setEditingPreset({ ...editingPreset, defaultDir: e.target.value })}
+                        onFocus={() => setShowDirDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowDirDropdown(false), 150)}
+                        className="w-full px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                        placeholder="~/Code"
+                      />
+                      {showDirDropdown && filteredDirs.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-theme-secondary border border-theme rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                          {filteredDirs.map((dir) => (
+                            <button
+                              key={dir}
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setEditingPreset({ ...editingPreset, defaultDir: dir });
+                                setShowDirDropdown(false);
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-theme-primary hover:bg-theme-tertiary transition-colors"
+                            >
+                              {dir}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs text-theme-muted mb-1">Startup Command</label>
+                      <input
+                        type="text"
+                        value={editingPreset.initialCommand || ''}
+                        onChange={(e) => setEditingPreset({ ...editingPreset, initialCommand: e.target.value })}
+                        className="w-full px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                        placeholder="claude"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => setEditingPreset(null)}
+                        className="px-3 py-1 text-xs bg-theme-primary text-theme-secondary rounded hover:text-theme-primary"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleSavePreset(editingPreset)}
+                        disabled={!editingPreset.host || !editingPreset.name}
+                        className="px-3 py-1 text-xs btn-accent rounded disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {presets.map((preset) => (
                 <div key={preset.id} className="bg-theme-tertiary rounded-lg p-3">
                   {editingPreset?.id === preset.id ? (
@@ -282,15 +430,35 @@ export function SettingsModal({
                           className="w-16 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
                         />
                       </div>
-                      <div>
+                      <div className="relative">
                         <label className="block text-xs text-theme-muted mb-1">Default Directory</label>
                         <input
                           type="text"
                           value={editingPreset.defaultDir || ''}
                           onChange={(e) => setEditingPreset({ ...editingPreset, defaultDir: e.target.value })}
+                          onFocus={() => setShowDirDropdown(true)}
+                          onBlur={() => setTimeout(() => setShowDirDropdown(false), 150)}
                           className="w-full px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
                           placeholder="~/Code"
                         />
+                        {showDirDropdown && filteredDirs.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-theme-secondary border border-theme rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                            {filteredDirs.map((dir) => (
+                              <button
+                                key={dir}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setEditingPreset({ ...editingPreset, defaultDir: dir });
+                                  setShowDirDropdown(false);
+                                }}
+                                className="w-full px-3 py-2 text-left text-sm text-theme-primary hover:bg-theme-tertiary transition-colors"
+                              >
+                                {dir}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs text-theme-muted mb-1">Startup Command</label>
@@ -302,26 +470,55 @@ export function SettingsModal({
                           placeholder="claude"
                         />
                       </div>
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => setEditingPreset(null)}
-                          className="px-3 py-1 text-xs bg-theme-primary text-theme-secondary rounded hover:text-theme-primary"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleSavePreset(editingPreset)}
-                          className="px-3 py-1 text-xs btn-accent rounded"
-                        >
-                          Save
-                        </button>
+                      <div className="flex gap-2 justify-between">
+                        {presets.some(p => p.id === editingPreset.id) && (
+                          <button
+                            onClick={() => handleDeletePreset(editingPreset.id)}
+                            className="px-3 py-1 text-xs bg-red-600 hover:bg-red-500 text-white rounded"
+                          >
+                            Delete
+                          </button>
+                        )}
+                        <div className="flex gap-2 ml-auto">
+                          <button
+                            onClick={() => setEditingPreset(null)}
+                            className="px-3 py-1 text-xs bg-theme-primary text-theme-secondary rounded hover:text-theme-primary"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleSavePreset(editingPreset)}
+                            disabled={!editingPreset.host || !editingPreset.name}
+                            className="px-3 py-1 text-xs btn-accent rounded disabled:opacity-50"
+                          >
+                            Save
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    // View mode
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-medium text-theme-primary text-sm">{preset.name}</div>
+                    // View mode - clickable to connect
+                    <button
+                      onClick={() => {
+                        if (onConnectPreset && !isConnected) {
+                          onConnectPreset(preset);
+                          onClose();
+                        }
+                      }}
+                      disabled={isConnected}
+                      className={`w-full text-left flex items-start justify-between group ${
+                        !isConnected ? 'hover:bg-theme-primary/30 -m-3 p-3 rounded-lg transition-colors' : ''
+                      } ${isConnected ? 'opacity-60' : ''}`}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium text-theme-primary text-sm flex items-center gap-2">
+                          {preset.name}
+                          {!isConnected && (
+                            <span className="opacity-0 group-hover:opacity-100 text-xs text-[var(--accent-primary)] transition-opacity">
+                              → Connect
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-theme-muted">{preset.user}@{preset.host}:{preset.port}</div>
                         {preset.defaultDir && (
                           <div className="text-xs text-theme-muted mt-1">
@@ -332,16 +529,19 @@ export function SettingsModal({
                           </div>
                         )}
                       </div>
-                      <button
-                        onClick={() => setEditingPreset(preset)}
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPreset(preset);
+                        }}
                         className="p-1 text-theme-muted hover:text-theme-primary"
                         title="Edit preset"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                      </button>
-                    </div>
+                      </div>
+                    </button>
                   )}
                 </div>
               ))}

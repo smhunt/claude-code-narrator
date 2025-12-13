@@ -87,6 +87,31 @@ app.get('/api/status', (_req, res) => {
   });
 });
 
+// List directories in ~/Code for autocomplete
+app.get('/api/directories', async (_req, res) => {
+  try {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    const os = await import('os');
+
+    const codeDir = path.join(os.homedir(), 'Code');
+    const entries = await fs.readdir(codeDir, { withFileTypes: true });
+
+    const directories = entries
+      .filter(entry => entry.isDirectory() && !entry.name.startsWith('.'))
+      .map(entry => `~/Code/${entry.name}`)
+      .sort();
+
+    // Add the root ~/Code as first option
+    directories.unshift('~/Code');
+
+    res.json({ directories });
+  } catch (error) {
+    console.error('Failed to list directories:', error);
+    res.json({ directories: ['~/Code'] });
+  }
+});
+
 // Read and summarize Claude export file
 app.post('/api/claude-export', async (req, res) => {
   const { filePath, level = 'medium' } = req.body as { filePath: string; level?: DetailLevel };
@@ -163,37 +188,35 @@ io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   let currentSessionId: string | null = null;
 
-  // Helper to set up PTY event handlers
-  const setupPTYHandlers = () => {
-    const dataHandler = (sessionId: string, data: string) => {
-      if (sessionId === currentSessionId) {
-        socket.emit('terminal:output', { data });
-      }
-    };
-
-    const exitHandler = (sessionId: string, exitCode: number) => {
-      if (sessionId === currentSessionId) {
-        socket.emit('terminal:exit', { exitCode });
-      }
-    };
-
-    ptyManager.on('data', dataHandler);
-    ptyManager.on('exit', exitHandler);
-
-    socket.on('disconnect', () => {
-      ptyManager.off('data', dataHandler);
-      ptyManager.off('exit', exitHandler);
-      if (currentSessionId && ptyManager.has(currentSessionId)) {
-        const lines = ptyManager.getTranscriptLines(currentSessionId);
-        const session = getSession(currentSessionId);
-        if (session && lines.length > 0) {
-          const transcriptPath = saveTranscript(currentSessionId, lines, session.started_at);
-          endSession(currentSessionId, transcriptPath);
-        }
-        ptyManager.kill(currentSessionId);
-      }
-    });
+  // Set up PTY event handlers ONCE per connection
+  const dataHandler = (sessionId: string, data: string) => {
+    if (sessionId === currentSessionId) {
+      socket.emit('terminal:output', { data });
+    }
   };
+
+  const exitHandler = (sessionId: string, exitCode: number) => {
+    if (sessionId === currentSessionId) {
+      socket.emit('terminal:exit', { exitCode });
+    }
+  };
+
+  ptyManager.on('data', dataHandler);
+  ptyManager.on('exit', exitHandler);
+
+  socket.on('disconnect', () => {
+    ptyManager.off('data', dataHandler);
+    ptyManager.off('exit', exitHandler);
+    if (currentSessionId && ptyManager.has(currentSessionId)) {
+      const lines = ptyManager.getTranscriptLines(currentSessionId);
+      const session = getSession(currentSessionId);
+      if (session && lines.length > 0) {
+        const transcriptPath = saveTranscript(currentSessionId, lines, session.started_at);
+        endSession(currentSessionId, transcriptPath);
+      }
+      ptyManager.kill(currentSessionId);
+    }
+  });
 
   // Start local terminal session
   socket.on('terminal:start', ({ defaultDir, initialCommand }: {
@@ -209,8 +232,6 @@ io.on('connection', (socket) => {
       startedAt: dbSession.started_at,
       type: 'local',
     });
-
-    setupPTYHandlers();
   });
 
   // Start SSH session
@@ -233,8 +254,6 @@ io.on('connection', (socket) => {
         type: 'ssh',
         sshHost: user ? `${user}@${host}` : host,
       });
-
-      setupPTYHandlers();
     } catch (error) {
       socket.emit('session:error', { error: 'Failed to start SSH session' });
     }

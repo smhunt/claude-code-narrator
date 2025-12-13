@@ -14,6 +14,7 @@ import { useTour } from './hooks/useTour';
 import { socket, BACKEND_URL } from './lib/socket';
 import { useToast } from './components/Toast';
 import { loadSavedTheme, applyTheme, type Theme } from './lib/themes';
+import type { SSHPreset } from './lib/sshPresets';
 
 type DetailLevel = 'high' | 'medium' | 'detailed';
 
@@ -331,6 +332,18 @@ function App() {
     setSummaryLevel(null);
   }, [endSession]);
 
+  // Connect via preset and auto-focus terminal
+  const handleConnectPreset = useCallback((preset: SSHPreset) => {
+    startSSHSession({
+      host: preset.host,
+      user: preset.user,
+      port: preset.port,
+      defaultDir: preset.defaultDir,
+      initialCommand: preset.initialCommand,
+    });
+    setShowSettings(false);
+  }, [startSSHSession]);
+
   return (
     <div className="h-screen max-h-screen bg-theme-primary text-theme-primary flex flex-col overflow-hidden">
       {/* App Header with controls */}
@@ -436,6 +449,8 @@ function App() {
         openaiAvailable={openaiAvailable}
         currentTheme={theme}
         onThemeChange={handleThemeChange}
+        onConnectPreset={handleConnectPreset}
+        isConnected={!!sessionId}
       />
 
       {/* Changelog Modal */}
