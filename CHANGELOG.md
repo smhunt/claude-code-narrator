@@ -29,6 +29,11 @@
   - Persists selection to localStorage
 - CSS variables for consistent theming across components
 
+### Fixed
+- **TTS State Sync**: Improved reliability of real-time voice settings changes
+  - Added polling to keep React state in sync with speechSynthesis API
+  - Prevents race conditions during settings changes while speaking
+
 ## [0.2.1] - 2025-12-12
 
 ### Added
