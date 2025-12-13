@@ -196,10 +196,13 @@ io.on('connection', (socket) => {
   };
 
   // Start local terminal session
-  socket.on('terminal:start', () => {
+  socket.on('terminal:start', ({ defaultDir, initialCommand }: {
+    defaultDir?: string;
+    initialCommand?: string;
+  } = {}) => {
     currentSessionId = uuidv4();
     const dbSession = createSession(currentSessionId);
-    ptyManager.spawn(currentSessionId);
+    ptyManager.spawn(currentSessionId, { defaultDir, initialCommand });
 
     socket.emit('session:started', {
       id: currentSessionId,

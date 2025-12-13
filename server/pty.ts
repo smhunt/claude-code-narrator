@@ -10,6 +10,11 @@ export interface PTYSession {
   sshHost?: string;
 }
 
+export interface LocalOptions {
+  defaultDir?: string; // Directory to cd to after starting
+  initialCommand?: string; // Command to run after cd (e.g., 'claude')
+}
+
 export interface SSHOptions {
   host: string;
   user?: string;
@@ -21,8 +26,9 @@ export interface SSHOptions {
 class PTYManager extends EventEmitter {
   private sessions: Map<string, PTYSession> = new Map();
 
-  spawn(sessionId: string): PTYSession {
+  spawn(sessionId: string, options?: LocalOptions): PTYSession {
     const shell = process.env.SHELL || '/bin/bash';
+    const { defaultDir, initialCommand } = options || {};
 
     const ptyProcess = pty.spawn(shell, [], {
       name: 'xterm-256color',
@@ -39,6 +45,20 @@ class PTYManager extends EventEmitter {
       startedAt: Date.now(),
       type: 'local',
     };
+
+    // Send startup commands after shell is ready
+    if (defaultDir || initialCommand) {
+      setTimeout(() => {
+        if (defaultDir) {
+          ptyProcess.write(`cd ${defaultDir}\r`);
+        }
+        if (initialCommand) {
+          setTimeout(() => {
+            ptyProcess.write(`${initialCommand}\r`);
+          }, defaultDir ? 500 : 0);
+        }
+      }, 800);
+    }
 
     ptyProcess.onData((data) => {
       session.transcript.push(data);

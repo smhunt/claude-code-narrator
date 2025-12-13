@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { SSHConfig } from '../hooks/useTerminal';
+import type { SSHConfig, LocalConfig } from '../hooks/useTerminal';
 import { loadSSHPresets, type SSHPreset } from '../lib/sshPresets';
 
 type DetailLevel = 'high' | 'medium' | 'detailed';
@@ -9,7 +9,7 @@ interface AppHeaderProps {
   isConnected: boolean;
   sessionId: string | null;
   sessionType: 'local' | 'ssh' | null;
-  onStartSession: () => void;
+  onStartSession: (config?: LocalConfig) => void;
   onStartSSHSession: (config: SSHConfig) => void;
   onEndSession: () => void;
   // Summarization
@@ -125,16 +125,25 @@ export function AppHeader({
           ) : (
             <>
               <button
-                onClick={onStartSession}
-                className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded transition-colors"
+                onClick={() => onStartSession()}
+                className="px-2 py-1 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded transition-colors"
+                title="Start plain terminal"
               >
-                Local
+                Term
+              </button>
+              <button
+                onClick={() => onStartSession({ defaultDir: '~/Code', initialCommand: 'claude' })}
+                className="px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs rounded transition-colors"
+                title="Start local Claude Code session"
+              >
+                Claude
               </button>
               <button
                 onClick={() => setShowSSHPanel(!showSSHPanel)}
                 className={`px-2 py-1 text-white text-xs rounded transition-colors ${
                   showSSHPanel ? 'bg-blue-500' : 'bg-blue-600 hover:bg-blue-500'
                 }`}
+                title="SSH to remote server"
               >
                 SSH
               </button>

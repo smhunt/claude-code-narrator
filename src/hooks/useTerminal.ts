@@ -11,13 +11,18 @@ export interface SSHConfig {
   initialCommand?: string; // Command to run after cd (e.g., 'claude')
 }
 
+export interface LocalConfig {
+  defaultDir?: string;
+  initialCommand?: string;
+}
+
 export interface UseTerminalReturn {
   terminalRef: React.RefObject<HTMLDivElement | null>;
   isConnected: boolean;
   sessionId: string | null;
   sessionType: 'local' | 'ssh' | null;
   sshHost: string | null;
-  startSession: () => Promise<void>;
+  startSession: (config?: LocalConfig) => Promise<void>;
   startSSHSession: (config: SSHConfig) => Promise<void>;
   endSession: () => void;
   requestSummary: (level: 'high' | 'medium' | 'detailed') => void;
@@ -134,11 +139,11 @@ export function useTerminal(): UseTerminalReturn {
     };
   }, []);
 
-  const startSession = useCallback(async () => {
+  const startSession = useCallback(async (config?: LocalConfig) => {
     try {
       await connectSocket();
       setIsConnected(true);
-      socket.emit('terminal:start');
+      socket.emit('terminal:start', config || {});
     } catch (error) {
       console.error('Failed to connect:', error);
     }
