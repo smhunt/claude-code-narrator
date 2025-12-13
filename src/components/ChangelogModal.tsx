@@ -3,9 +3,20 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.2.2';
+const APP_VERSION = '0.2.3';
 
 const changelog = [
+  {
+    version: '0.2.3',
+    date: '2025-12-13',
+    changes: [
+      'OpenAI TTS: High-quality voices as alternative to browser speech',
+      '6 premium voices: Nova, Alloy, Echo, Fable, Onyx, Shimmer',
+      'TTS Engine toggle in Voice Settings (Browser / OpenAI)',
+      'Speed control 0.25x-4x for OpenAI voices',
+      'Auto-detects OPENAI_API_KEY availability',
+    ],
+  },
   {
     version: '0.2.2',
     date: '2025-12-12',

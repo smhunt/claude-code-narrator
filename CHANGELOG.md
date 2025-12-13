@@ -14,6 +14,22 @@
 
 ---
 
+## [0.2.3] - 2025-12-13
+
+### Added
+- **OpenAI TTS Integration**: High-quality text-to-speech as alternative to browser voices
+  - 6 premium voices: Nova, Alloy, Echo, Fable, Onyx, Shimmer
+  - Speed control from 0.25x to 4x
+  - TTS Engine toggle in Voice Settings (Browser / OpenAI)
+  - Auto-detects availability from `OPENAI_API_KEY` in `.env`
+  - Loading indicator while generating audio
+
+### Changed
+- Voice Settings UI now shows provider-specific options
+- Shared volume control works with both TTS engines
+
+---
+
 ## [0.2.2] - 2025-12-12
 
 ### Added
