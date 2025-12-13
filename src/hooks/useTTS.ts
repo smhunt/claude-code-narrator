@@ -55,6 +55,46 @@ export function useTTS(): UseTTSReturn {
   const [settings, setSettings] = useState<TTSSettings>(loadSettings);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const currentTextRef = useRef<string>('');
+  const isRestartingRef = useRef(false);
+  const isSpeakingRef = useRef(false);
+  const isPausedRef = useRef(false);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    isSpeakingRef.current = isSpeaking;
+  }, [isSpeaking]);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  // Poll speechSynthesis state to keep React state in sync
+  // This handles edge cases where callbacks don't fire reliably
+  useEffect(() => {
+    const syncState = () => {
+      const speaking = speechSynthesis.speaking;
+      const paused = speechSynthesis.paused;
+
+      // Only update if we're not in the middle of a restart
+      if (!isRestartingRef.current) {
+        if (speaking && !isSpeakingRef.current) {
+          setIsSpeaking(true);
+        } else if (!speaking && isSpeakingRef.current && !paused) {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          currentTextRef.current = '';
+        }
+
+        if (paused !== isPausedRef.current && speaking) {
+          setIsPaused(paused);
+        }
+      }
+    };
+
+    // Poll every 100ms
+    const interval = setInterval(syncState, 100);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const loadVoices = () => {
@@ -79,7 +119,12 @@ export function useTTS(): UseTTSReturn {
   }, []);
 
   const speakWithSettings = useCallback(
-    (text: string, currentSettings: TTSSettings) => {
+    (text: string, currentSettings: TTSSettings, isRestart = false) => {
+      // Mark that we're restarting to prevent polling interference
+      if (isRestart) {
+        isRestartingRef.current = true;
+      }
+
       // Stop any current speech
       speechSynthesis.cancel();
 
@@ -93,17 +138,22 @@ export function useTTS(): UseTTSReturn {
       }
 
       utterance.onstart = () => {
+        isRestartingRef.current = false;
         setIsSpeaking(true);
         setIsPaused(false);
       };
 
       utterance.onend = () => {
-        setIsSpeaking(false);
-        setIsPaused(false);
-        currentTextRef.current = '';
+        // Don't reset state if we're in the middle of a restart
+        if (!isRestartingRef.current) {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          currentTextRef.current = '';
+        }
       };
 
       utterance.onerror = () => {
+        isRestartingRef.current = false;
         setIsSpeaking(false);
         setIsPaused(false);
       };
@@ -122,13 +172,26 @@ export function useTTS(): UseTTSReturn {
     [settings, speakWithSettings]
   );
 
+  // Track previous settings to detect actual changes
+  const prevSettingsRef = useRef<TTSSettings | null>(null);
+
   // Re-apply settings in real-time when they change during speech
   useEffect(() => {
-    if (isSpeaking && currentTextRef.current && !isPaused) {
-      // Restart speech with new settings
-      speakWithSettings(currentTextRef.current, settings);
+    // Check if settings actually changed (not just a re-render)
+    const prev = prevSettingsRef.current;
+    const settingsChanged = prev !== null && (
+      prev.rate !== settings.rate ||
+      prev.pitch !== settings.pitch ||
+      prev.volume !== settings.volume ||
+      prev.voiceIndex !== settings.voiceIndex
+    );
+    prevSettingsRef.current = settings;
+
+    // Only restart if settings changed AND we're currently speaking
+    if (settingsChanged && isSpeakingRef.current && currentTextRef.current && !isPausedRef.current) {
+      speakWithSettings(currentTextRef.current, settings, true);
     }
-  }, [settings, isSpeaking, isPaused, speakWithSettings]);
+  }, [settings, speakWithSettings]);
 
   const stop = useCallback(() => {
     speechSynthesis.cancel();
