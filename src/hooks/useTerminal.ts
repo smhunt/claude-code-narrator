@@ -7,6 +7,8 @@ export interface SSHConfig {
   host: string;
   user?: string;
   port?: number;
+  defaultDir?: string; // Directory to cd to after connecting
+  initialCommand?: string; // Command to run after cd (e.g., 'claude')
 }
 
 export interface UseTerminalReturn {

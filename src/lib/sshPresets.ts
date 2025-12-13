@@ -4,6 +4,8 @@ export interface SSHPreset {
   host: string;
   user: string;
   port: number;
+  defaultDir?: string; // Directory to cd to after connecting
+  initialCommand?: string; // Command to run after cd (e.g., 'claude')
 }
 
 const STORAGE_KEY = 'claude-narrator-ssh-presets';
@@ -16,6 +18,8 @@ const DEFAULT_PRESETS: SSHPreset[] = [
     host: '10.10.10.24',
     user: 'seanhunt',
     port: 22,
+    defaultDir: '~/Code',
+    initialCommand: 'claude',
   },
   {
     id: 'imac',
@@ -23,6 +27,8 @@ const DEFAULT_PRESETS: SSHPreset[] = [
     host: '10.10.10.154',
     user: 'seanhunt',
     port: 22,
+    defaultDir: '~/Code',
+    initialCommand: 'claude',
   },
 ];
 

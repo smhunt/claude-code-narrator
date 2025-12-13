@@ -14,6 +14,8 @@ export interface SSHOptions {
   host: string;
   user?: string;
   port?: number;
+  defaultDir?: string; // Directory to cd to after connecting
+  initialCommand?: string; // Command to run after cd (e.g., 'claude')
 }
 
 class PTYManager extends EventEmitter {
@@ -53,7 +55,7 @@ class PTYManager extends EventEmitter {
   }
 
   spawnSSH(sessionId: string, options: SSHOptions): PTYSession {
-    const { host, user, port = 22 } = options;
+    const { host, user, port = 22, defaultDir, initialCommand } = options;
 
     // Build SSH command
     const sshArgs: string[] = [];
@@ -83,9 +85,39 @@ class PTYManager extends EventEmitter {
       sshHost: target,
     };
 
+    // Track if we've sent post-connect commands
+    let postConnectSent = false;
+    const sendPostConnectCommands = () => {
+      if (postConnectSent) return;
+      postConnectSent = true;
+
+      // Small delay to ensure shell is ready
+      setTimeout(() => {
+        // cd to default directory if specified
+        if (defaultDir) {
+          ptyProcess.write(`cd ${defaultDir}\r`);
+        }
+        // Run initial command if specified (with a brief delay after cd)
+        if (initialCommand) {
+          setTimeout(() => {
+            ptyProcess.write(`${initialCommand}\r`);
+          }, defaultDir ? 300 : 0);
+        }
+      }, 500);
+    };
+
     ptyProcess.onData((data) => {
       session.transcript.push(data);
       this.emit('data', sessionId, data);
+
+      // Detect shell prompt to send post-connect commands
+      // Look for common prompt indicators after initial connection
+      if (!postConnectSent && (defaultDir || initialCommand)) {
+        // Check for shell prompt patterns ($ % > # or user@host:)
+        if (/[$%>#]\s*$/.test(data) || /@.*:\s*$/.test(data)) {
+          sendPostConnectCommands();
+        }
+      }
     });
 
     ptyProcess.onExit(({ exitCode }) => {

@@ -176,12 +176,18 @@ io.on('connection', (socket) => {
   });
 
   // Start SSH session
-  socket.on('terminal:ssh', ({ host, user, port }: { host: string; user?: string; port?: number }) => {
+  socket.on('terminal:ssh', ({ host, user, port, defaultDir, initialCommand }: {
+    host: string;
+    user?: string;
+    port?: number;
+    defaultDir?: string;
+    initialCommand?: string;
+  }) => {
     currentSessionId = uuidv4();
     const dbSession = createSession(currentSessionId);
 
     try {
-      ptyManager.spawnSSH(currentSessionId, { host, user, port });
+      ptyManager.spawnSSH(currentSessionId, { host, user, port, defaultDir, initialCommand });
 
       socket.emit('session:started', {
         id: currentSessionId,

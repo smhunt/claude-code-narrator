@@ -77,6 +77,8 @@ export function AppHeader({
         host: preset.host,
         user: preset.user,
         port: preset.port,
+        defaultDir: preset.defaultDir,
+        initialCommand: preset.initialCommand,
       });
       setShowSSHPanel(false);
     }

@@ -14,6 +14,30 @@
 
 ---
 
+## [0.2.4] - 2025-12-13
+
+### Added
+- **SSH Presets**: Save and reuse SSH connection configurations
+  - Default presets for HA Server and iMac
+  - Dropdown selector for quick connections
+  - Custom connection form for one-off connections
+  - Default directory option (auto-cd after connect)
+  - Initial command option (auto-run after cd, e.g., 'claude')
+- **Terminal-First UI**: Major layout refactor
+  - Terminal always visible (no more tabs)
+  - Compact header with inline controls
+  - Side drawer for history & narration (doesn't block terminal)
+  - Settings moved to modal
+- **Click-to-Play Summaries**: Play directly from history list by clicking summary tags
+- **Transcript Viewer**: Modal to view raw terminal output used for AI summarization
+
+### Changed
+- Header now shows session type (Local/SSH) badge and End button
+- Detail level (Brief/Standard/Detailed) as compact inline buttons
+- Playback controls integrated into header
+
+---
+
 ## [0.2.3] - 2025-12-13
 
 ### Added
