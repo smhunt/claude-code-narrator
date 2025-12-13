@@ -3,9 +3,18 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.2.3';
+const APP_VERSION = '0.2.4';
 
 const changelog = [
+  {
+    version: '0.2.4',
+    date: '2025-12-13',
+    changes: [
+      'Click-to-play summary tags in history list (Brief/Standard/Detailed)',
+      'View Transcript modal shows raw terminal output used for AI summarization',
+      'Improved history item layout with View Transcript and Delete actions',
+    ],
+  },
   {
     version: '0.2.3',
     date: '2025-12-13',

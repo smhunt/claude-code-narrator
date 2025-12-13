@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import type { Session } from '../hooks/useTranscripts';
 
+type DetailLevel = 'high' | 'medium' | 'detailed';
+
 interface TranscriptListProps {
   sessions: Session[];
   loading: boolean;
   onRefresh: () => void;
   onSelect: (session: Session) => void;
   onAutoPlay: (session: Session) => void;
+  onPlaySummary: (session: Session, level: DetailLevel) => void;
+  onViewTranscript: (session: Session) => void;
   onDelete: (id: string) => void;
   selectedId: string | null;
 }
@@ -17,6 +21,8 @@ export function TranscriptList({
   onRefresh,
   onSelect,
   onAutoPlay,
+  onPlaySummary,
+  onViewTranscript,
   onDelete,
   selectedId,
 }: TranscriptListProps) {
@@ -103,29 +109,79 @@ export function TranscriptList({
 
               {expandedId === session.id && (
                 <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
                     {session.summary_high && (
-                      <span className="text-xs px-2 py-0.5 bg-green-800 rounded">Brief</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPlaySummary(session, 'high');
+                        }}
+                        className="text-xs px-2 py-0.5 bg-green-800 hover:bg-green-700 rounded flex items-center gap-1 transition-colors"
+                        title="Play brief summary"
+                      >
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                        Brief
+                      </button>
                     )}
                     {session.summary_medium && (
-                      <span className="text-xs px-2 py-0.5 bg-blue-800 rounded">Standard</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPlaySummary(session, 'medium');
+                        }}
+                        className="text-xs px-2 py-0.5 bg-blue-800 hover:bg-blue-700 rounded flex items-center gap-1 transition-colors"
+                        title="Play standard summary"
+                      >
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                        Standard
+                      </button>
                     )}
                     {session.summary_detailed && (
-                      <span className="text-xs px-2 py-0.5 bg-purple-800 rounded">Detailed</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPlaySummary(session, 'detailed');
+                        }}
+                        className="text-xs px-2 py-0.5 bg-purple-800 hover:bg-purple-700 rounded flex items-center gap-1 transition-colors"
+                        title="Play detailed summary"
+                      >
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                        Detailed
+                      </button>
                     )}
                     {!session.summary_high && !session.summary_medium && !session.summary_detailed && (
                       <span className="text-xs text-gray-500">No summaries yet</span>
                     )}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(session.id);
-                    }}
-                    className="text-xs text-red-400 hover:text-red-300"
-                  >
-                    Delete session
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewTranscript(session);
+                      }}
+                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      View Transcript
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(session.id);
+                      }}
+                      className="text-xs text-red-400 hover:text-red-300"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

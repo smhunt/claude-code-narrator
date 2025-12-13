@@ -6,10 +6,11 @@ import { NarrationPanel } from './components/NarrationPanel';
 import { TranscriptList } from './components/TranscriptList';
 import { QuickCommands } from './components/QuickCommands';
 import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
+import { TranscriptModal } from './components/TranscriptModal';
 import { ProductTour } from './components/ProductTour';
 import { useTerminal } from './hooks/useTerminal';
 import { useTTS } from './hooks/useTTS';
-import { useTranscripts, type Session } from './hooks/useTranscripts';
+import { useTranscripts, type Session, type TranscriptData } from './hooks/useTranscripts';
 import { useTour } from './hooks/useTour';
 import { socket, BACKEND_URL } from './lib/socket';
 import { useToast } from './components/Toast';
@@ -49,6 +50,7 @@ function App() {
     sessions,
     loading: sessionsLoading,
     refresh: refreshSessions,
+    getSession,
     deleteSession,
     summarizeSession,
   } = useTranscripts();
@@ -75,6 +77,10 @@ function App() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [transcriptData, setTranscriptData] = useState<TranscriptData | null>(null);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [transcriptSessionId, setTranscriptSessionId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [mobileTab, setMobileTab] = useState<'terminal' | 'controls' | 'history'>('terminal');
 
@@ -241,6 +247,47 @@ function App() {
     [detailLevel, summarizeSession, speak]
   );
 
+  // Play a specific summary level from history
+  const handlePlaySummary = useCallback(
+    (session: Session, level: DetailLevel) => {
+      setSelectedSession(session);
+
+      const summaryMap = {
+        high: session.summary_high,
+        medium: session.summary_medium,
+        detailed: session.summary_detailed,
+      };
+
+      const summary = summaryMap[level];
+      if (summary) {
+        setCurrentSummary(summary);
+        setSummaryLevel(level);
+        setTimeout(() => speak(summary), 100);
+      }
+    },
+    [speak]
+  );
+
+  // View transcript modal
+  const handleViewTranscript = useCallback(
+    async (session: Session) => {
+      setTranscriptSessionId(session.id);
+      setShowTranscript(true);
+      setTranscriptLoading(true);
+      setTranscriptData(null);
+
+      try {
+        const sessionData = await getSession(session.id);
+        setTranscriptData(sessionData?.transcript || null);
+      } catch {
+        toast.error('Failed to load transcript');
+      } finally {
+        setTranscriptLoading(false);
+      }
+    },
+    [getSession, toast]
+  );
+
   const handleEndSession = useCallback(() => {
     endSession();
     setCurrentSummary(null);
@@ -357,6 +404,8 @@ function App() {
                   onRefresh={refreshSessions}
                   onSelect={handleSelectSession}
                   onAutoPlay={handleAutoPlay}
+                  onPlaySummary={handlePlaySummary}
+                  onViewTranscript={handleViewTranscript}
                   onDelete={deleteSession}
                   selectedId={selectedSession?.id ?? null}
                 />
@@ -440,6 +489,8 @@ function App() {
                   onRefresh={refreshSessions}
                   onSelect={handleSelectSession}
                   onAutoPlay={handleAutoPlay}
+                  onPlaySummary={handlePlaySummary}
+                  onViewTranscript={handleViewTranscript}
                   onDelete={deleteSession}
                   selectedId={selectedSession?.id ?? null}
                 />
@@ -470,6 +521,15 @@ function App() {
 
       {/* Changelog Modal */}
       <ChangelogModal isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
+
+      {/* Transcript Modal */}
+      <TranscriptModal
+        isOpen={showTranscript}
+        onClose={() => setShowTranscript(false)}
+        transcript={transcriptData}
+        sessionId={transcriptSessionId}
+        isLoading={transcriptLoading}
+      />
 
       {/* Product Tour */}
       <ProductTour
