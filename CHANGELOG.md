@@ -18,6 +18,8 @@
 
 ### Added
 - **SSH Presets**: Save and reuse SSH connection configurations
+- **Clickable Presets**: Click a preset to instantly connect and switch to terminal
+- **Directory Autocomplete**: Autocomplete dropdown with ~/Code folders for preset config
   - Default presets for HA Server and iMac
   - Dropdown selector for quick connections
   - Custom connection form for one-off connections
@@ -35,6 +37,12 @@
 - Header now shows session type (Local/SSH) badge and End button
 - Detail level (Brief/Standard/Detailed) as compact inline buttons
 - Playback controls integrated into header
+
+### Fixed
+- **iPhone Notch Support**: Safe-area-insets for iPhone 14 Pro Dynamic Island
+- **Mobile Terminal Font**: Reduced to 10px on mobile for better horizontal fit
+- **Settings as Drawer**: Converted from modal to slide-out drawer (view terminal while settings open)
+- Disabled accidental zoom on mobile with viewport meta tags
 
 ---
 
