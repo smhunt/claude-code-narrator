@@ -301,7 +301,7 @@ function App() {
           <div className="flex-1 overflow-auto min-h-0">
             {mobileTab === 'terminal' && (
               <div className="flex flex-col gap-2">
-                <div className="h-[250px] min-h-[200px]" data-tour="terminal">
+                <div className="h-[180px] min-h-[150px]" data-tour="terminal">
                   <Terminal terminalRef={terminalRef} />
                 </div>
                 {sessionId && (
