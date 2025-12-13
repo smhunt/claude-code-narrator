@@ -41,9 +41,13 @@ export function useTerminal(): UseTerminalReturn {
   useEffect(() => {
     if (!terminalRef.current || terminalInstance.current) return;
 
+    // Calculate font size based on screen width for mobile
+    const isMobile = window.innerWidth < 768;
+    const fontSize = isMobile ? 10 : 14;
+
     const term = new Terminal({
       cursorBlink: true,
-      fontSize: 14,
+      fontSize,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       theme: {
         background: '#1a1b26',
