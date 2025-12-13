@@ -6,11 +6,14 @@ import { NarrationPanel } from './components/NarrationPanel';
 import { TranscriptList } from './components/TranscriptList';
 import { QuickCommands } from './components/QuickCommands';
 import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
+import { ProductTour } from './components/ProductTour';
 import { useTerminal } from './hooks/useTerminal';
 import { useTTS } from './hooks/useTTS';
 import { useTranscripts, type Session } from './hooks/useTranscripts';
+import { useTour } from './hooks/useTour';
 import { socket, BACKEND_URL } from './lib/socket';
 import { useToast } from './components/Toast';
+import { loadSavedTheme, applyTheme, type Theme } from './lib/themes';
 
 type DetailLevel = 'high' | 'medium' | 'detailed';
 
@@ -50,6 +53,19 @@ function App() {
 
   const toast = useToast();
 
+  const {
+    isActive: tourActive,
+    currentStep,
+    currentStepData,
+    totalSteps,
+    startTour,
+    endTour,
+    nextStep,
+    prevStep,
+    goToStep,
+  } = useTour();
+
+  const [theme, setTheme] = useState<Theme>(() => loadSavedTheme());
   const [detailLevel, setDetailLevel] = useState<DetailLevel>('medium');
   const [currentSummary, setCurrentSummary] = useState<string | null>(null);
   const [summaryLevel, setSummaryLevel] = useState<string | null>(null);
@@ -59,6 +75,16 @@ function App() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [mobileTab, setMobileTab] = useState<'terminal' | 'controls' | 'history'>('terminal');
+
+  // Apply theme on load and when it changes
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  const handleThemeChange = useCallback((newTheme: Theme) => {
+    setTheme(newTheme);
+    applyTheme(newTheme);
+  }, []);
 
   // Handle responsive breakpoint
   useEffect(() => {
@@ -221,7 +247,7 @@ function App() {
 
   // Mobile tab navigation
   const MobileNav = () => (
-    <div className="flex gap-1 mb-3 bg-gray-800 p-1 rounded-lg">
+    <div className="flex gap-1 mb-3 bg-theme-secondary p-1 rounded-lg">
       {[
         { id: 'terminal', label: 'Terminal', icon: '💻' },
         { id: 'controls', label: 'Controls', icon: '⚙️' },
@@ -232,8 +258,8 @@ function App() {
           onClick={() => setMobileTab(tab.id as typeof mobileTab)}
           className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
             mobileTab === tab.id
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700'
+              ? 'btn-accent'
+              : 'text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary'
           }`}
         >
           <span className="mr-1">{tab.icon}</span>
@@ -244,14 +270,25 @@ function App() {
   );
 
   return (
-    <div className="h-screen max-h-screen bg-gray-900 text-white p-2 sm:p-3 flex flex-col overflow-hidden">
+    <div className="h-screen max-h-screen bg-theme-primary text-theme-primary p-2 sm:p-3 flex flex-col overflow-hidden">
       <header className="mb-2 sm:mb-3 shrink-0">
-        <h1 className="text-lg sm:text-xl font-bold">Claude Code Narrator</h1>
-        <p className="text-gray-400 text-xs">
-          Terminal session capture with AI-powered narration
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold">Claude Code Narrator</h1>
+            <p className="text-theme-muted text-xs">
+              Terminal session capture with AI-powered narration
+            </p>
+          </div>
+          <button
+            onClick={startTour}
+            className="text-theme-muted hover:text-theme-primary text-xs px-2 py-1 rounded hover:bg-theme-tertiary transition-colors"
+            title="Start product tour"
+          >
+            ?
+          </button>
+        </div>
         {apiAvailable === false && (
-          <p className="text-yellow-500 text-xs sm:text-sm mt-1">
+          <p className="text-warning text-xs sm:text-sm mt-1">
             No ANTHROPIC_API_KEY detected - using mock summaries
           </p>
         )}
@@ -263,12 +300,16 @@ function App() {
           <MobileNav />
           <div className="flex-1 overflow-auto min-h-0">
             {mobileTab === 'terminal' && (
-              <div className="h-full flex flex-col gap-2">
-                <div className="flex-1 min-h-[200px]">
+              <div className="flex flex-col gap-2">
+                <div className="h-[250px] min-h-[200px]" data-tour="terminal">
                   <Terminal terminalRef={terminalRef} />
                 </div>
-                {sessionId && <QuickCommands onCommand={sendCommand} />}
-                <div className="mt-2">
+                {sessionId && (
+                  <div data-tour="quick-commands">
+                    <QuickCommands onCommand={sendCommand} />
+                  </div>
+                )}
+                <div data-tour="narration">
                   <NarrationPanel
                     summary={currentSummary}
                     summaryLevel={summaryLevel}
@@ -283,33 +324,39 @@ function App() {
               </div>
             )}
             {mobileTab === 'controls' && (
-              <Controls
-                isConnected={isConnected}
-                sessionId={sessionId}
-                sessionType={sessionType}
-                sshHost={sshHost}
-                onStartSession={startSession}
-                onStartSSHSession={startSSHSession}
-                onEndSession={handleEndSession}
-                onSummarize={handleSummarize}
-                detailLevel={detailLevel}
-                onDetailLevelChange={setDetailLevel}
-                ttsSettings={ttsSettings}
-                onTTSSettingsChange={updateTTSSettings}
-                voices={voices}
-                isSummarizing={isSummarizing}
-              />
+              <div data-tour="controls">
+                <Controls
+                  isConnected={isConnected}
+                  sessionId={sessionId}
+                  sessionType={sessionType}
+                  sshHost={sshHost}
+                  onStartSession={startSession}
+                  onStartSSHSession={startSSHSession}
+                  onEndSession={handleEndSession}
+                  onSummarize={handleSummarize}
+                  detailLevel={detailLevel}
+                  onDetailLevelChange={setDetailLevel}
+                  ttsSettings={ttsSettings}
+                  onTTSSettingsChange={updateTTSSettings}
+                  voices={voices}
+                  isSummarizing={isSummarizing}
+                  currentTheme={theme}
+                  onThemeChange={handleThemeChange}
+                />
+              </div>
             )}
             {mobileTab === 'history' && (
-              <TranscriptList
-                sessions={sessions}
-                loading={sessionsLoading}
-                onRefresh={refreshSessions}
-                onSelect={handleSelectSession}
-                onAutoPlay={handleAutoPlay}
-                onDelete={deleteSession}
-                selectedId={selectedSession?.id ?? null}
-              />
+              <div data-tour="history">
+                <TranscriptList
+                  sessions={sessions}
+                  loading={sessionsLoading}
+                  onRefresh={refreshSessions}
+                  onSelect={handleSelectSession}
+                  onAutoPlay={handleAutoPlay}
+                  onDelete={deleteSession}
+                  selectedId={selectedSession?.id ?? null}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -321,19 +368,23 @@ function App() {
             <PanelGroup direction="vertical">
               <Panel defaultSize={65} minSize={20}>
                 <div className="h-full pr-2 pb-1 flex flex-col gap-2">
-                  <div className="flex-1 min-h-0">
+                  <div className="flex-1 min-h-0" data-tour="terminal">
                     <Terminal terminalRef={terminalRef} />
                   </div>
-                  {sessionId && <QuickCommands onCommand={sendCommand} />}
+                  {sessionId && (
+                    <div data-tour="quick-commands">
+                      <QuickCommands onCommand={sendCommand} />
+                    </div>
+                  )}
                 </div>
               </Panel>
 
               <PanelResizeHandle className="h-2 flex items-center justify-center group cursor-row-resize">
-                <div className="w-16 h-1 rounded-full bg-gray-700 group-hover:bg-blue-500 transition-colors" />
+                <div className="w-16 h-1 rounded-full bg-theme-tertiary group-hover:bg-[var(--accent-primary)] transition-colors" />
               </PanelResizeHandle>
 
               <Panel defaultSize={35} minSize={15}>
-                <div className="h-full pr-2 pt-1 overflow-auto">
+                <div className="h-full pr-2 pt-1 overflow-auto" data-tour="narration">
                   <NarrationPanel
                     summary={currentSummary}
                     summaryLevel={summaryLevel}
@@ -350,56 +401,62 @@ function App() {
           </Panel>
 
           <PanelResizeHandle className="w-2 flex items-center justify-center group cursor-col-resize">
-            <div className="h-16 w-1 rounded-full bg-gray-700 group-hover:bg-blue-500 transition-colors" />
+            <div className="h-16 w-1 rounded-full bg-theme-tertiary group-hover:bg-[var(--accent-primary)] transition-colors" />
           </PanelResizeHandle>
 
           {/* Sidebar */}
           <Panel defaultSize={25} minSize={15} maxSize={40}>
             <div className="h-full pl-2 flex flex-col gap-4 overflow-y-auto">
-              <Controls
-                isConnected={isConnected}
-                sessionId={sessionId}
-                sessionType={sessionType}
-                sshHost={sshHost}
-                onStartSession={startSession}
-                onStartSSHSession={startSSHSession}
-                onEndSession={handleEndSession}
-                onSummarize={handleSummarize}
-                detailLevel={detailLevel}
-                onDetailLevelChange={setDetailLevel}
-                ttsSettings={ttsSettings}
-                onTTSSettingsChange={updateTTSSettings}
-                voices={voices}
-                isSummarizing={isSummarizing}
-              />
-              <TranscriptList
-                sessions={sessions}
-                loading={sessionsLoading}
-                onRefresh={refreshSessions}
-                onSelect={handleSelectSession}
-                onAutoPlay={handleAutoPlay}
-                onDelete={deleteSession}
-                selectedId={selectedSession?.id ?? null}
-              />
+              <div data-tour="controls">
+                <Controls
+                  isConnected={isConnected}
+                  sessionId={sessionId}
+                  sessionType={sessionType}
+                  sshHost={sshHost}
+                  onStartSession={startSession}
+                  onStartSSHSession={startSSHSession}
+                  onEndSession={handleEndSession}
+                  onSummarize={handleSummarize}
+                  detailLevel={detailLevel}
+                  onDetailLevelChange={setDetailLevel}
+                  ttsSettings={ttsSettings}
+                  onTTSSettingsChange={updateTTSSettings}
+                  voices={voices}
+                  isSummarizing={isSummarizing}
+                  currentTheme={theme}
+                  onThemeChange={handleThemeChange}
+                />
+              </div>
+              <div data-tour="history">
+                <TranscriptList
+                  sessions={sessions}
+                  loading={sessionsLoading}
+                  onRefresh={refreshSessions}
+                  onSelect={handleSelectSession}
+                  onAutoPlay={handleAutoPlay}
+                  onDelete={deleteSession}
+                  selectedId={selectedSession?.id ?? null}
+                />
+              </div>
             </div>
           </Panel>
         </PanelGroup>
       )}
 
       {/* Footer */}
-      <footer className="mt-2 py-2 border-t border-gray-800 shrink-0">
-        <div className="flex items-center justify-between text-xs text-gray-500">
+      <footer className="mt-2 py-2 border-t border-theme shrink-0">
+        <div className="flex items-center justify-between text-xs text-theme-muted">
           <button
             onClick={() => setShowChangelog(true)}
-            className="hover:text-blue-400 transition-colors font-mono"
+            className="hover:text-[var(--accent-primary)] transition-colors font-mono"
           >
             v{APP_VERSION}
           </button>
           <div className="text-center hidden sm:block">
             Powered by{' '}
-            <span className="text-blue-400 font-medium">Ecoworks Web Architecture</span>
+            <span className="text-[var(--accent-primary)] font-medium">Ecoworks Web Architecture</span>
           </div>
-          <div className="text-gray-600">
+          <div className="text-theme-muted">
             &copy; {new Date().getFullYear()} Ecoworks
           </div>
         </div>
@@ -407,6 +464,18 @@ function App() {
 
       {/* Changelog Modal */}
       <ChangelogModal isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
+
+      {/* Product Tour */}
+      <ProductTour
+        isActive={tourActive}
+        currentStep={currentStep}
+        currentStepData={currentStepData}
+        totalSteps={totalSteps}
+        onNext={nextStep}
+        onPrev={prevStep}
+        onSkip={() => endTour(true)}
+        onGoToStep={goToStep}
+      />
     </div>
   );
 }
