@@ -170,15 +170,16 @@ function App() {
   const handleClaudeExport = useCallback(async () => {
     if (!sessionId) return;
 
-    const exportFileName = `narrator-export-${Date.now()}.txt`;
+    // Use absolute path in /tmp for reliability
+    const exportFilePath = `/tmp/narrator-claude-export.txt`;
 
     // Send export command to Claude Code
-    sendCommand(`/export ${exportFileName}\r`);
+    sendCommand(`/export ${exportFilePath}\r`);
     toast.info('Exporting Claude transcript...');
     setIsSummarizing(true);
 
-    // Wait for export to complete
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Wait for export to complete (Claude needs time to write)
+    await new Promise((resolve) => setTimeout(resolve, 2500));
 
     try {
       // Call server to read and summarize the export
@@ -186,13 +187,14 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filePath: exportFileName,
+          filePath: exportFilePath,
           level: detailLevel,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to summarize Claude export');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to summarize Claude export');
       }
 
       const data = await response.json();
@@ -201,7 +203,7 @@ function App() {
       toast.success(`Claude transcript summarized (${data.chars} chars)`);
     } catch (error) {
       console.error('Claude export error:', error);
-      toast.error('Failed to export Claude transcript');
+      toast.error('Make sure Claude Code is running in the terminal');
     } finally {
       setIsSummarizing(false);
     }
