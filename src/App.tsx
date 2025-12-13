@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Terminal } from './components/Terminal';
-import { Controls } from './components/Controls';
-import { NarrationPanel } from './components/NarrationPanel';
-import { TranscriptList } from './components/TranscriptList';
 import { QuickCommands } from './components/QuickCommands';
+import { AppHeader } from './components/AppHeader';
+import { SettingsModal } from './components/SettingsModal';
+import { SideDrawer } from './components/SideDrawer';
 import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
 import { TranscriptModal } from './components/TranscriptModal';
 import { ProductTour } from './components/ProductTour';
@@ -24,7 +23,6 @@ function App() {
     isConnected,
     sessionId,
     sessionType,
-    sshHost,
     startSession,
     startSSHSession,
     endSession,
@@ -69,6 +67,7 @@ function App() {
     goToStep,
   } = useTour();
 
+  // UI State
   const [theme, setTheme] = useState<Theme>(() => loadSavedTheme());
   const [detailLevel, setDetailLevel] = useState<DetailLevel>('medium');
   const [currentSummary, setCurrentSummary] = useState<string | null>(null);
@@ -76,13 +75,15 @@ function App() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
+
+  // Modal/Drawer State
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [transcriptData, setTranscriptData] = useState<TranscriptData | null>(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptSessionId, setTranscriptSessionId] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
-  const [mobileTab, setMobileTab] = useState<'terminal' | 'controls' | 'history'>('terminal');
 
   // Apply theme on load and when it changes
   useEffect(() => {
@@ -92,13 +93,6 @@ function App() {
   const handleThemeChange = useCallback((newTheme: Theme) => {
     setTheme(newTheme);
     applyTheme(newTheme);
-  }, []);
-
-  // Handle responsive breakpoint
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Check API status on mount
@@ -215,7 +209,6 @@ function App() {
     async (session: Session) => {
       setSelectedSession(session);
 
-      // Get existing summary or generate new one
       const existingSummary =
         detailLevel === 'high'
           ? session.summary_high
@@ -226,16 +219,13 @@ function App() {
       if (existingSummary) {
         setCurrentSummary(existingSummary);
         setSummaryLevel(detailLevel);
-        // Auto-play after a brief delay to ensure state is set
         setTimeout(() => speak(existingSummary), 100);
       } else {
-        // Generate new summary then play
         setIsSummarizing(true);
         try {
           const summary = await summarizeSession(session.id, detailLevel);
           setCurrentSummary(summary);
           setSummaryLevel(detailLevel);
-          // Auto-play the generated summary
           setTimeout(() => speak(summary), 100);
         } catch {
           setCurrentSummary('Failed to generate summary');
@@ -262,15 +252,11 @@ function App() {
       if (summary) {
         setCurrentSummary(summary);
         setSummaryLevel(level);
-        // On mobile, switch to terminal tab to see the player
-        if (isMobile) {
-          setMobileTab('terminal');
-        }
         toast.info('Playing narration...');
         setTimeout(() => speak(summary), 100);
       }
     },
-    [speak, isMobile, toast]
+    [speak, toast]
   );
 
   // View transcript modal
@@ -299,230 +285,108 @@ function App() {
     setSummaryLevel(null);
   }, [endSession]);
 
-  // Mobile tab navigation
-  const MobileNav = () => (
-    <div className="flex gap-1 mb-3 bg-theme-secondary p-1 rounded-lg">
-      {[
-        { id: 'terminal', label: 'Terminal', icon: '💻' },
-        { id: 'controls', label: 'Controls', icon: '⚙️' },
-        { id: 'history', label: 'History', icon: '📜' },
-      ].map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => setMobileTab(tab.id as typeof mobileTab)}
-          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-            mobileTab === tab.id
-              ? 'btn-accent'
-              : 'text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary'
-          }`}
-        >
-          <span className="mr-1">{tab.icon}</span>
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-
   return (
-    <div className="h-screen max-h-screen bg-theme-primary text-theme-primary p-2 sm:p-3 flex flex-col overflow-hidden">
-      <header className="mb-2 sm:mb-3 shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold">Claude Code Narrator</h1>
-            <p className="text-theme-muted text-xs">
-              Terminal session capture with AI-powered narration
-            </p>
-          </div>
-          <button
-            onClick={startTour}
-            className="text-theme-muted hover:text-theme-primary text-xs px-2 py-1 rounded hover:bg-theme-tertiary transition-colors"
-            title="Start product tour"
-          >
-            ?
-          </button>
+    <div className="h-screen max-h-screen bg-theme-primary text-theme-primary flex flex-col overflow-hidden">
+      {/* App Header with controls */}
+      <AppHeader
+        isConnected={isConnected}
+        sessionId={sessionId}
+        sessionType={sessionType}
+        onStartSession={startSession}
+        onStartSSHSession={startSSHSession}
+        onEndSession={handleEndSession}
+        detailLevel={detailLevel}
+        onDetailLevelChange={setDetailLevel}
+        onSummarize={handleSummarize}
+        isSummarizing={isSummarizing}
+        hasSummary={!!currentSummary}
+        isSpeaking={isSpeaking}
+        isPaused={isPaused}
+        onSpeak={handleSpeak}
+        onPause={pause}
+        onResume={resume}
+        onStop={stop}
+        onOpenSettings={() => setShowSettings(true)}
+        onOpenDrawer={() => setShowDrawer(true)}
+      />
+
+      {/* API Warning */}
+      {apiAvailable === false && (
+        <div className="px-3 py-1 bg-yellow-900/50 text-yellow-300 text-xs text-center">
+          No ANTHROPIC_API_KEY detected - using mock summaries
         </div>
-        {apiAvailable === false && (
-          <p className="text-warning text-xs sm:text-sm mt-1">
-            No ANTHROPIC_API_KEY detected - using mock summaries
-          </p>
-        )}
-      </header>
-
-      {/* Mobile Layout */}
-      {isMobile ? (
-        <div className="flex-1 flex flex-col min-h-0">
-          <MobileNav />
-          <div className="flex-1 overflow-auto min-h-0">
-            {mobileTab === 'terminal' && (
-              <div className="flex flex-col gap-2">
-                <div className="h-[180px] min-h-[150px]" data-tour="terminal">
-                  <Terminal terminalRef={terminalRef} />
-                </div>
-                {sessionId && (
-                  <div data-tour="quick-commands">
-                    <QuickCommands onCommand={sendCommand} />
-                  </div>
-                )}
-                <div data-tour="narration">
-                  <NarrationPanel
-                    summary={currentSummary}
-                    summaryLevel={summaryLevel}
-                    isSpeaking={isSpeaking}
-                    isPaused={isPaused}
-                    onSpeak={handleSpeak}
-                    onStop={stop}
-                    onPause={pause}
-                    onResume={resume}
-                  />
-                </div>
-              </div>
-            )}
-            {mobileTab === 'controls' && (
-              <div data-tour="controls">
-                <Controls
-                  isConnected={isConnected}
-                  sessionId={sessionId}
-                  sessionType={sessionType}
-                  sshHost={sshHost}
-                  onStartSession={startSession}
-                  onStartSSHSession={startSSHSession}
-                  onEndSession={handleEndSession}
-                  onSummarize={handleSummarize}
-                  detailLevel={detailLevel}
-                  onDetailLevelChange={setDetailLevel}
-                  ttsSettings={ttsSettings}
-                  onTTSSettingsChange={updateTTSSettings}
-                  voices={voices}
-                  isSummarizing={isSummarizing}
-                  ttsLoading={ttsLoading}
-                  openaiAvailable={openaiAvailable}
-                  currentTheme={theme}
-                  onThemeChange={handleThemeChange}
-                />
-              </div>
-            )}
-            {mobileTab === 'history' && (
-              <div data-tour="history">
-                <TranscriptList
-                  sessions={sessions}
-                  loading={sessionsLoading}
-                  onRefresh={refreshSessions}
-                  onSelect={handleSelectSession}
-                  onAutoPlay={handleAutoPlay}
-                  onPlaySummary={handlePlaySummary}
-                  onViewTranscript={handleViewTranscript}
-                  onDelete={deleteSession}
-                  selectedId={selectedSession?.id ?? null}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        /* Desktop Layout */
-        <PanelGroup direction="horizontal" className="flex-1 min-h-0">
-          {/* Main terminal area */}
-          <Panel defaultSize={75} minSize={40}>
-            <PanelGroup direction="vertical">
-              <Panel defaultSize={65} minSize={20}>
-                <div className="h-full pr-2 pb-1 flex flex-col gap-2">
-                  <div className="flex-1 min-h-0" data-tour="terminal">
-                    <Terminal terminalRef={terminalRef} />
-                  </div>
-                  {sessionId && (
-                    <div data-tour="quick-commands">
-                      <QuickCommands onCommand={sendCommand} />
-                    </div>
-                  )}
-                </div>
-              </Panel>
-
-              <PanelResizeHandle className="h-2 flex items-center justify-center group cursor-row-resize">
-                <div className="w-16 h-1 rounded-full bg-theme-tertiary group-hover:bg-[var(--accent-primary)] transition-colors" />
-              </PanelResizeHandle>
-
-              <Panel defaultSize={35} minSize={15}>
-                <div className="h-full pr-2 pt-1 overflow-auto" data-tour="narration">
-                  <NarrationPanel
-                    summary={currentSummary}
-                    summaryLevel={summaryLevel}
-                    isSpeaking={isSpeaking}
-                    isPaused={isPaused}
-                    onSpeak={handleSpeak}
-                    onStop={stop}
-                    onPause={pause}
-                    onResume={resume}
-                  />
-                </div>
-              </Panel>
-            </PanelGroup>
-          </Panel>
-
-          <PanelResizeHandle className="w-2 flex items-center justify-center group cursor-col-resize">
-            <div className="h-16 w-1 rounded-full bg-theme-tertiary group-hover:bg-[var(--accent-primary)] transition-colors" />
-          </PanelResizeHandle>
-
-          {/* Sidebar */}
-          <Panel defaultSize={25} minSize={15} maxSize={40}>
-            <div className="h-full pl-2 flex flex-col gap-4 overflow-y-auto">
-              <div data-tour="controls">
-                <Controls
-                  isConnected={isConnected}
-                  sessionId={sessionId}
-                  sessionType={sessionType}
-                  sshHost={sshHost}
-                  onStartSession={startSession}
-                  onStartSSHSession={startSSHSession}
-                  onEndSession={handleEndSession}
-                  onSummarize={handleSummarize}
-                  detailLevel={detailLevel}
-                  onDetailLevelChange={setDetailLevel}
-                  ttsSettings={ttsSettings}
-                  onTTSSettingsChange={updateTTSSettings}
-                  voices={voices}
-                  isSummarizing={isSummarizing}
-                  ttsLoading={ttsLoading}
-                  openaiAvailable={openaiAvailable}
-                  currentTheme={theme}
-                  onThemeChange={handleThemeChange}
-                />
-              </div>
-              <div data-tour="history">
-                <TranscriptList
-                  sessions={sessions}
-                  loading={sessionsLoading}
-                  onRefresh={refreshSessions}
-                  onSelect={handleSelectSession}
-                  onAutoPlay={handleAutoPlay}
-                  onPlaySummary={handlePlaySummary}
-                  onViewTranscript={handleViewTranscript}
-                  onDelete={deleteSession}
-                  selectedId={selectedSession?.id ?? null}
-                />
-              </div>
-            </div>
-          </Panel>
-        </PanelGroup>
       )}
 
-      {/* Footer */}
-      <footer className="mt-2 py-2 border-t border-theme shrink-0">
-        <div className="flex items-center justify-between text-xs text-theme-muted">
-          <button
-            onClick={() => setShowChangelog(true)}
-            className="hover:text-[var(--accent-primary)] transition-colors font-mono"
-          >
-            v{APP_VERSION}
-          </button>
-          <div className="text-center hidden sm:block">
-            Powered by{' '}
-            <span className="text-[var(--accent-primary)] font-medium">Ecoworks Web Architecture</span>
-          </div>
-          <div className="text-theme-muted">
-            &copy; {new Date().getFullYear()} Ecoworks
-          </div>
+      {/* Main Content: Terminal always visible */}
+      <main className="flex-1 flex flex-col min-h-0 p-2 sm:p-3 gap-2">
+        {/* Terminal */}
+        <div className="flex-1 min-h-0" data-tour="terminal">
+          <Terminal terminalRef={terminalRef} />
         </div>
+
+        {/* Quick Commands */}
+        {sessionId && (
+          <div data-tour="quick-commands">
+            <QuickCommands onCommand={sendCommand} />
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="px-3 py-2 border-t border-theme shrink-0 flex items-center justify-between text-xs text-theme-muted">
+        <button
+          onClick={() => setShowChangelog(true)}
+          className="hover:text-[var(--accent-primary)] transition-colors font-mono"
+        >
+          v{APP_VERSION}
+        </button>
+        <button
+          onClick={startTour}
+          className="hover:text-[var(--accent-primary)] transition-colors"
+          title="Start product tour"
+        >
+          Help
+        </button>
+        <span className="hidden sm:inline">
+          Powered by <span className="text-[var(--accent-primary)]">Ecoworks</span>
+        </span>
       </footer>
+
+      {/* Side Drawer for History & Narration */}
+      <SideDrawer
+        isOpen={showDrawer}
+        onClose={() => setShowDrawer(false)}
+        sessions={sessions}
+        sessionsLoading={sessionsLoading}
+        onRefreshSessions={refreshSessions}
+        onSelectSession={handleSelectSession}
+        onAutoPlay={handleAutoPlay}
+        onPlaySummary={handlePlaySummary}
+        onViewTranscript={handleViewTranscript}
+        onDeleteSession={deleteSession}
+        selectedSessionId={selectedSession?.id ?? null}
+        summary={currentSummary}
+        summaryLevel={summaryLevel}
+        isSpeaking={isSpeaking}
+        isPaused={isPaused}
+        onSpeak={handleSpeak}
+        onStop={stop}
+        onPause={pause}
+        onResume={resume}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        ttsSettings={ttsSettings}
+        onTTSSettingsChange={updateTTSSettings}
+        voices={voices}
+        ttsLoading={ttsLoading}
+        openaiAvailable={openaiAvailable}
+        currentTheme={theme}
+        onThemeChange={handleThemeChange}
+      />
 
       {/* Changelog Modal */}
       <ChangelogModal isOpen={showChangelog} onClose={() => setShowChangelog(false)} />

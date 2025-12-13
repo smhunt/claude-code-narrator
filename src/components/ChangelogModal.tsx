@@ -3,9 +3,20 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.2.4';
+const APP_VERSION = '0.3.0';
 
 const changelog = [
+  {
+    version: '0.3.0',
+    date: '2025-12-13',
+    changes: [
+      'Major UI refactor: Terminal always visible, no more tabs',
+      'New compact header with session controls, detail level, and playback',
+      'Side drawer for History and Narration (swipe from right)',
+      'Settings modal for voice settings and theme',
+      'Smaller bundle size (removed resizable panels from mobile)',
+    ],
+  },
   {
     version: '0.2.4',
     date: '2025-12-13',
