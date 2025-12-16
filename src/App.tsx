@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Terminal } from './components/Terminal';
+import { MultiTerminal } from './components/MultiTerminal';
+import { SessionTabs } from './components/SessionTabs';
 import { QuickCommands } from './components/QuickCommands';
 import { AppHeader } from './components/AppHeader';
 import { SettingsModal } from './components/SettingsModal';
@@ -7,7 +8,7 @@ import { SideDrawer } from './components/SideDrawer';
 import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
 import { TranscriptModal } from './components/TranscriptModal';
 import { ProductTour } from './components/ProductTour';
-import { useTerminal } from './hooks/useTerminal';
+import { useMultiTerminal } from './hooks/useMultiTerminal';
 import { useTTS } from './hooks/useTTS';
 import { useTranscripts, type Session, type TranscriptData } from './hooks/useTranscripts';
 import { useTour } from './hooks/useTour';
@@ -20,16 +21,22 @@ type DetailLevel = 'high' | 'medium' | 'detailed';
 
 function App() {
   const {
-    terminalRef,
-    isConnected,
-    sessionId,
-    sessionType,
-    startSession,
+    sessions: terminalSessions,
+    activeSessionId,
+    setActiveSession,
+    createSession,
+    closeSession,
+    startLocalSession,
     startSSHSession,
     endSession,
     requestSummary,
     sendCommand,
-  } = useTerminal();
+    mountTerminal,
+    unmountTerminal,
+    getActiveSession,
+  } = useMultiTerminal();
+
+  const activeSession = getActiveSession();
 
   const {
     speak,
@@ -158,32 +165,77 @@ function App() {
     };
   }, [refreshSessions, toast]);
 
-  const handleSummarize = useCallback(
-    (level: DetailLevel) => {
-      if (sessionId) {
-        requestSummary(level);
-      }
-    },
-    [sessionId, requestSummary]
-  );
+  // Handle new terminal session
+  const handleNewSession = useCallback(() => {
+    createSession();
+  }, [createSession]);
+
+  // Handle start local session
+  const handleStartSession = useCallback(async (config?: { defaultDir?: string; initialCommand?: string }) => {
+    let tabId = activeSessionId;
+
+    // Create a new tab if none exists or current has a session
+    if (!tabId || activeSession?.sessionId) {
+      tabId = createSession();
+    }
+
+    await startLocalSession(tabId, config);
+  }, [activeSessionId, activeSession, createSession, startLocalSession]);
+
+  // Handle start SSH session
+  const handleStartSSHSession = useCallback(async (config: {
+    host: string;
+    user?: string;
+    port?: number;
+    defaultDir?: string;
+    initialCommand?: string;
+  }) => {
+    let tabId = activeSessionId;
+
+    // Create a new tab if none exists or current has a session
+    if (!tabId || activeSession?.sessionId) {
+      tabId = createSession();
+    }
+
+    await startSSHSession(tabId, config);
+  }, [activeSessionId, activeSession, createSession, startSSHSession]);
+
+  // Handle end session
+  const handleEndSession = useCallback(() => {
+    if (activeSessionId) {
+      endSession(activeSessionId);
+      setCurrentSummary(null);
+      setSummaryLevel(null);
+    }
+  }, [activeSessionId, endSession]);
+
+  // Handle summarize
+  const handleSummarize = useCallback((level: DetailLevel) => {
+    if (activeSessionId && activeSession?.sessionId) {
+      requestSummary(activeSessionId, level);
+    }
+  }, [activeSessionId, activeSession, requestSummary]);
+
+  // Handle send command
+  const handleSendCommand = useCallback((command: string) => {
+    if (activeSessionId && activeSession?.sessionId) {
+      sendCommand(activeSessionId, command);
+    }
+  }, [activeSessionId, activeSession, sendCommand]);
 
   // Export Claude transcript and summarize
   const handleClaudeExport = useCallback(async () => {
-    if (!sessionId) return;
+    if (!activeSessionId || !activeSession?.sessionId) return;
 
-    // Use absolute path in /tmp for reliability
     const exportFilePath = `/tmp/narrator-claude-export.txt`;
 
-    // Send export command to Claude Code
-    sendCommand(`/export ${exportFilePath}\r`);
+    sendCommand(activeSessionId, `/export ${exportFilePath}\r`);
     toast.info('Exporting Claude transcript...');
     setIsSummarizing(true);
 
-    // Wait for export to complete (Claude needs time to write)
     await new Promise((resolve) => setTimeout(resolve, 2500));
 
     try {
-      // Call server to read and summarize the export
       const response = await fetch(`${BACKEND_URL}/api/claude-export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -208,13 +260,12 @@ function App() {
     } finally {
       setIsSummarizing(false);
     }
-  }, [sessionId, sendCommand, detailLevel, toast]);
+  }, [activeSessionId, activeSession, sendCommand, detailLevel, toast]);
 
   const handleSelectSession = useCallback(
     async (session: Session) => {
       setSelectedSession(session);
 
-      // Show existing summary if available
       const existingSummary =
         detailLevel === 'high'
           ? session.summary_high
@@ -226,7 +277,6 @@ function App() {
         setCurrentSummary(existingSummary);
         setSummaryLevel(detailLevel);
       } else {
-        // Generate new summary
         setIsSummarizing(true);
         try {
           const summary = await summarizeSession(session.id, detailLevel);
@@ -243,15 +293,11 @@ function App() {
   );
 
   const handleSpeak = useCallback(() => {
-    console.log('[App] handleSpeak called', { hasSummary: !!currentSummary, summaryLength: currentSummary?.length });
     if (currentSummary) {
       speak(currentSummary);
-    } else {
-      console.warn('[App] handleSpeak: no currentSummary to speak');
     }
   }, [currentSummary, speak]);
 
-  // Auto-play: select session and immediately start speaking
   const handleAutoPlay = useCallback(
     async (session: Session) => {
       setSelectedSession(session);
@@ -284,7 +330,6 @@ function App() {
     [detailLevel, summarizeSession, speak]
   );
 
-  // Play a specific summary level from history
   const handlePlaySummary = useCallback(
     (session: Session, level: DetailLevel) => {
       setSelectedSession(session);
@@ -306,7 +351,6 @@ function App() {
     [speak, toast]
   );
 
-  // View transcript modal
   const handleViewTranscript = useCallback(
     async (session: Session) => {
       setTranscriptSessionId(session.id);
@@ -326,15 +370,9 @@ function App() {
     [getSession, toast]
   );
 
-  const handleEndSession = useCallback(() => {
-    endSession();
-    setCurrentSummary(null);
-    setSummaryLevel(null);
-  }, [endSession]);
-
   // Connect via preset and auto-focus terminal
   const handleConnectPreset = useCallback((preset: SSHPreset) => {
-    startSSHSession({
+    handleStartSSHSession({
       host: preset.host,
       user: preset.user,
       port: preset.port,
@@ -342,17 +380,17 @@ function App() {
       initialCommand: preset.initialCommand,
     });
     setShowSettings(false);
-  }, [startSSHSession]);
+  }, [handleStartSSHSession]);
 
   return (
     <div className="h-screen max-h-screen bg-theme-primary text-theme-primary flex flex-col overflow-hidden">
       {/* App Header with controls */}
       <AppHeader
-        isConnected={isConnected}
-        sessionId={sessionId}
-        sessionType={sessionType}
-        onStartSession={startSession}
-        onStartSSHSession={startSSHSession}
+        isConnected={!!activeSession?.isConnected}
+        sessionId={activeSession?.sessionId ?? null}
+        sessionType={activeSession?.sessionType ?? null}
+        onStartSession={handleStartSession}
+        onStartSSHSession={handleStartSSHSession}
         onEndSession={handleEndSession}
         detailLevel={detailLevel}
         onDetailLevelChange={setDetailLevel}
@@ -377,19 +415,33 @@ function App() {
         </div>
       )}
 
+      {/* Session Tabs */}
+      <SessionTabs
+        sessions={terminalSessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={setActiveSession}
+        onCloseSession={closeSession}
+        onNewSession={handleNewSession}
+      />
+
       {/* Main Content: Terminal + Side Drawer */}
       <main className="flex-1 flex min-h-0">
         {/* Terminal Area */}
         <div className="flex-1 flex flex-col min-h-0 p-2 sm:p-3 gap-2">
           {/* Terminal */}
           <div className="flex-1 min-h-0" data-tour="terminal">
-            <Terminal terminalRef={terminalRef} />
+            <MultiTerminal
+              sessions={terminalSessions}
+              activeSessionId={activeSessionId}
+              onMount={mountTerminal}
+              onUnmount={unmountTerminal}
+            />
           </div>
 
           {/* Quick Commands */}
-          {sessionId && (
+          {activeSession?.sessionId && (
             <div data-tour="quick-commands">
-              <QuickCommands onCommand={sendCommand} />
+              <QuickCommands onCommand={handleSendCommand} />
             </div>
           )}
         </div>
@@ -450,7 +502,7 @@ function App() {
         currentTheme={theme}
         onThemeChange={handleThemeChange}
         onConnectPreset={handleConnectPreset}
-        isConnected={!!sessionId}
+        isConnected={!!activeSession?.sessionId}
       />
 
       {/* Changelog Modal */}
