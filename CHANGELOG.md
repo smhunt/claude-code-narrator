@@ -40,6 +40,7 @@
 ### Fixed
 - Fixed terminal sizing issue where prompt was cut off at bottom
 - Fixed infinite React render loop in terminal mount/unmount logic
+- Fixed quick command buttons (ls, pwd, clear, exit) not working due to stale closure bug
 
 ---
 

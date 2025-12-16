@@ -326,7 +326,7 @@ export function useMultiTerminal(): UseMultiTerminalReturn {
 
   // End session (but keep tab)
   const endSession = useCallback((tabId: string) => {
-    const session = sessions.find(s => s.id === tabId);
+    const session = sessionsRef.current.find(s => s.id === tabId);
     if (!session?.sessionId) return;
 
     socket.emit('session:end', { sessionId: session.sessionId });
@@ -336,23 +336,23 @@ export function useMultiTerminal(): UseMultiTerminalReturn {
         ? { ...s, sessionId: null, isConnected: false, sessionType: null, sshHost: null }
         : s
     ));
-  }, [sessions]);
+  }, []);
 
   // Request summary
   const requestSummary = useCallback((tabId: string, level: 'high' | 'medium' | 'detailed') => {
-    const session = sessions.find(s => s.id === tabId);
+    const session = sessionsRef.current.find(s => s.id === tabId);
     if (session?.sessionId) {
       socket.emit('summarize', { level, sessionId: session.sessionId });
     }
-  }, [sessions]);
+  }, []);
 
   // Send command
   const sendCommand = useCallback((tabId: string, command: string) => {
-    const session = sessions.find(s => s.id === tabId);
+    const session = sessionsRef.current.find(s => s.id === tabId);
     if (session?.sessionId) {
       socket.emit('terminal:input', { data: command, sessionId: session.sessionId });
     }
-  }, [sessions]);
+  }, []);
 
   // Set active session
   const setActiveSession = useCallback((id: string) => {
