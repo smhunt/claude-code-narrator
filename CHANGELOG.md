@@ -32,6 +32,12 @@
   - Instructions for creating multiple terminal tabs
   - macOS Split View and Windows Snap tutorials
   - Pro tips for efficient terminal management
+- **Tmux Session Detection & Reconnect**: Detect tmux sessions and reconnect from history
+  - Auto-detects when terminal is running inside tmux
+  - Shows `tmux:session-name` badge (emerald) in History entries
+  - Shows SSH host badge (blue) for remote sessions
+  - "Reconnect" button opens new tab and attaches to tmux session
+  - Works for both local and SSH sessions
 
 ### Changed
 - Refactored from single-session to multi-session terminal architecture
@@ -255,6 +261,7 @@
 ### Completed
 - ✅ Multiple terminal tabs support (v0.3.0)
 - ✅ Split terminal setup guide (v0.3.0)
+- ✅ Tmux session detection and reconnect (v0.3.0)
 
 ---
 

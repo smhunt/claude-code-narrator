@@ -21,9 +21,23 @@ db.exec(`
     transcript_path TEXT,
     summary_high TEXT,
     summary_medium TEXT,
-    summary_detailed TEXT
+    summary_detailed TEXT,
+    tmux_session TEXT,
+    ssh_host TEXT
   )
 `);
+
+// Migration: Add columns if they don't exist (for existing databases)
+const tableInfo = db.prepare("PRAGMA table_info(sessions)").all() as { name: string }[];
+const columns = tableInfo.map((col) => col.name);
+
+if (!columns.includes('tmux_session')) {
+  db.exec('ALTER TABLE sessions ADD COLUMN tmux_session TEXT');
+}
+
+if (!columns.includes('ssh_host')) {
+  db.exec('ALTER TABLE sessions ADD COLUMN ssh_host TEXT');
+}
 
 export interface Session {
   id: string;
@@ -33,13 +47,15 @@ export interface Session {
   summary_high: string | null;
   summary_medium: string | null;
   summary_detailed: string | null;
+  tmux_session: string | null;
+  ssh_host: string | null;
 }
 
-export function createSession(id: string): Session {
+export function createSession(id: string, sshHost?: string): Session {
   const now = Date.now();
   db.prepare(`
-    INSERT INTO sessions (id, started_at) VALUES (?, ?)
-  `).run(id, now);
+    INSERT INTO sessions (id, started_at, ssh_host) VALUES (?, ?, ?)
+  `).run(id, now, sshHost || null);
 
   return {
     id,
@@ -49,6 +65,8 @@ export function createSession(id: string): Session {
     summary_high: null,
     summary_medium: null,
     summary_detailed: null,
+    tmux_session: null,
+    ssh_host: sshHost || null,
   };
 }
 
@@ -61,6 +79,14 @@ export function endSession(id: string, transcriptPath: string): void {
 export function updateSummary(id: string, level: 'high' | 'medium' | 'detailed', summary: string): void {
   const column = `summary_${level}`;
   db.prepare(`UPDATE sessions SET ${column} = ? WHERE id = ?`).run(summary, id);
+}
+
+export function updateTmuxSession(id: string, tmuxSession: string): void {
+  db.prepare('UPDATE sessions SET tmux_session = ? WHERE id = ?').run(tmuxSession, id);
+}
+
+export function updateSshHost(id: string, sshHost: string): void {
+  db.prepare('UPDATE sessions SET ssh_host = ? WHERE id = ?').run(sshHost, id);
 }
 
 export function getSession(id: string): Session | undefined {

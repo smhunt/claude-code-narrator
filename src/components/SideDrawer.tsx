@@ -17,6 +17,7 @@ interface SideDrawerProps {
   onPlaySummary: (session: Session, level: DetailLevel) => void;
   onViewTranscript: (session: Session) => void;
   onDeleteSession: (id: string) => void;
+  onReconnect?: (session: Session) => void;
   selectedSessionId: string | null;
   // Narration
   summary: string | null;
@@ -40,6 +41,7 @@ export function SideDrawer({
   onPlaySummary,
   onViewTranscript,
   onDeleteSession,
+  onReconnect,
   selectedSessionId,
   summary,
   summaryLevel,
@@ -106,6 +108,7 @@ export function SideDrawer({
             onPlaySummary={onPlaySummary}
             onViewTranscript={onViewTranscript}
             onDelete={onDeleteSession}
+            onReconnect={onReconnect}
             selectedId={selectedSessionId}
           />
         </div>

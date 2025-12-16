@@ -12,6 +12,7 @@ interface TranscriptListProps {
   onPlaySummary: (session: Session, level: DetailLevel) => void;
   onViewTranscript: (session: Session) => void;
   onDelete: (id: string) => void;
+  onReconnect?: (session: Session) => void;
   selectedId: string | null;
 }
 
@@ -24,6 +25,7 @@ export function TranscriptList({
   onPlaySummary,
   onViewTranscript,
   onDelete,
+  onReconnect,
   selectedId,
 }: TranscriptListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -107,6 +109,22 @@ export function TranscriptList({
                 {formatDate(session.started_at)}
               </div>
 
+              {/* Tmux and SSH badges */}
+              {(session.tmux_session || session.ssh_host) && (
+                <div className="flex gap-1 flex-wrap mt-1">
+                  {session.ssh_host && (
+                    <span className="text-xs px-1.5 py-0.5 bg-blue-900/50 text-blue-300 rounded">
+                      {session.ssh_host}
+                    </span>
+                  )}
+                  {session.tmux_session && (
+                    <span className="text-xs px-1.5 py-0.5 bg-emerald-900/50 text-emerald-300 rounded">
+                      tmux:{session.tmux_session}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {expandedId === session.id && (
                 <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
                   <div className="flex gap-1 flex-wrap">
@@ -159,19 +177,36 @@ export function TranscriptList({
                       <span className="text-xs text-gray-500">No summaries yet</span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onViewTranscript(session);
-                      }}
-                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      View Transcript
-                    </button>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewTranscript(session);
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Transcript
+                      </button>
+                      {session.tmux_session && onReconnect && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onReconnect(session);
+                          }}
+                          className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                          title={`Reconnect to tmux:${session.tmux_session}`}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Reconnect
+                        </button>
+                      )}
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

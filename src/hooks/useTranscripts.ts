@@ -11,6 +11,8 @@ export interface Session {
   summary_high: string | null;
   summary_medium: string | null;
   summary_detailed: string | null;
+  tmux_session: string | null;
+  ssh_host: string | null;
 }
 
 export interface TranscriptData {

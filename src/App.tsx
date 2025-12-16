@@ -372,6 +372,39 @@ function App() {
     [getSession, toast]
   );
 
+  // Reconnect to tmux session from history
+  const handleReconnect = useCallback(
+    (session: Session) => {
+      if (!session.tmux_session) return;
+
+      const tabId = createSession();
+      const attachCommand = `tmux attach -t ${session.tmux_session}`;
+
+      if (session.ssh_host) {
+        // SSH reconnect: parse user@host format
+        const [user, host] = session.ssh_host.includes('@')
+          ? session.ssh_host.split('@')
+          : [undefined, session.ssh_host];
+
+        startSSHSession(tabId, {
+          host: host || session.ssh_host,
+          user,
+          initialCommand: attachCommand,
+        });
+        toast.info(`Reconnecting to tmux:${session.tmux_session} via ${session.ssh_host}`);
+      } else {
+        // Local reconnect
+        startLocalSession(tabId, {
+          initialCommand: attachCommand,
+        });
+        toast.info(`Reconnecting to tmux:${session.tmux_session}`);
+      }
+
+      setShowDrawer(false);
+    },
+    [createSession, startSSHSession, startLocalSession, toast]
+  );
+
   // Connect via preset and auto-focus terminal
   const handleConnectPreset = useCallback((preset: SSHPreset) => {
     handleStartSSHSession({
@@ -461,6 +494,7 @@ function App() {
           onPlaySummary={handlePlaySummary}
           onViewTranscript={handleViewTranscript}
           onDeleteSession={deleteSession}
+          onReconnect={handleReconnect}
           selectedSessionId={selectedSession?.id ?? null}
           summary={currentSummary}
           summaryLevel={summaryLevel}

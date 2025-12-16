@@ -12,6 +12,7 @@ import {
   createSession,
   endSession,
   updateSummary,
+  updateTmuxSession,
   getSession,
   getAllSessions,
   deleteSession,
@@ -201,12 +202,23 @@ io.on('connection', (socket) => {
     }
   };
 
+  const tmuxHandler = (sessionId: string, tmuxSession: string) => {
+    if (sessionId === currentSessionId) {
+      // Update database with detected tmux session
+      updateTmuxSession(sessionId, tmuxSession);
+      // Notify client
+      socket.emit('session:tmux', { sessionId, tmuxSession });
+    }
+  };
+
   ptyManager.on('data', dataHandler);
   ptyManager.on('exit', exitHandler);
+  ptyManager.on('tmux:detected', tmuxHandler);
 
   socket.on('disconnect', () => {
     ptyManager.off('data', dataHandler);
     ptyManager.off('exit', exitHandler);
+    ptyManager.off('tmux:detected', tmuxHandler);
     if (currentSessionId && ptyManager.has(currentSessionId)) {
       const lines = ptyManager.getTranscriptLines(currentSessionId);
       const session = getSession(currentSessionId);
@@ -243,7 +255,8 @@ io.on('connection', (socket) => {
     initialCommand?: string;
   }) => {
     currentSessionId = uuidv4();
-    const dbSession = createSession(currentSessionId);
+    const sshHost = user ? `${user}@${host}` : host;
+    const dbSession = createSession(currentSessionId, sshHost);
 
     try {
       ptyManager.spawnSSH(currentSessionId, { host, user, port, defaultDir, initialCommand });
@@ -252,10 +265,50 @@ io.on('connection', (socket) => {
         id: currentSessionId,
         startedAt: dbSession.started_at,
         type: 'ssh',
-        sshHost: user ? `${user}@${host}` : host,
+        sshHost,
       });
     } catch (error) {
       socket.emit('session:error', { error: 'Failed to start SSH session' });
+    }
+  });
+
+  // Reconnect to tmux session
+  socket.on('terminal:reconnect', ({ tmuxSession, sshHost }: {
+    tmuxSession: string;
+    sshHost?: string;
+  }) => {
+    currentSessionId = uuidv4();
+    const dbSession = createSession(currentSessionId, sshHost);
+
+    try {
+      if (sshHost) {
+        // SSH reconnect: connect to host then attach to tmux
+        // Parse sshHost format: user@host or just host
+        const [user, host] = sshHost.includes('@')
+          ? sshHost.split('@')
+          : [undefined, sshHost];
+
+        ptyManager.spawnSSH(currentSessionId, {
+          host: host || sshHost,
+          user,
+          initialCommand: `tmux attach -t ${tmuxSession}`,
+        });
+      } else {
+        // Local reconnect: just attach to tmux
+        ptyManager.spawn(currentSessionId, {
+          initialCommand: `tmux attach -t ${tmuxSession}`,
+        });
+      }
+
+      socket.emit('session:started', {
+        id: currentSessionId,
+        startedAt: dbSession.started_at,
+        type: sshHost ? 'ssh' : 'local',
+        sshHost,
+        reconnectedTmux: tmuxSession,
+      });
+    } catch (error) {
+      socket.emit('session:error', { error: 'Failed to reconnect to tmux session' });
     }
   });
 
