@@ -3,7 +3,7 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.3.2';
+const APP_VERSION = '0.3.3';
 
 const changelog = [
   {
@@ -154,10 +154,10 @@ const changelog = [
 ];
 
 const roadmap = [
+  { status: 'completed', item: 'Export to Markdown (v0.3.3)' },
   { status: 'completed', item: 'Keyboard shortcuts (v0.3.2)' },
   { status: 'completed', item: 'Multiple terminal tabs (v0.3.0)' },
   { status: 'planned', item: 'Custom voice profiles' },
-  { status: 'planned', item: 'Export transcripts to markdown' },
   { status: 'planned', item: 'Split pane view' },
   { status: 'future', item: 'Team collaboration features' },
   { status: 'future', item: 'Cloud sync for transcripts' },

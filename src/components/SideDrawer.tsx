@@ -16,6 +16,7 @@ interface SideDrawerProps {
   onAutoPlay: (session: Session) => void;
   onPlaySummary: (session: Session, level: DetailLevel) => void;
   onViewTranscript: (session: Session) => void;
+  onExportMarkdown: (session: Session) => void;
   onDeleteSession: (id: string) => void;
   onReconnect?: (session: Session) => void;
   selectedSessionId: string | null;
@@ -40,6 +41,7 @@ export function SideDrawer({
   onAutoPlay,
   onPlaySummary,
   onViewTranscript,
+  onExportMarkdown,
   onDeleteSession,
   onReconnect,
   selectedSessionId,
@@ -107,6 +109,7 @@ export function SideDrawer({
             onAutoPlay={onAutoPlay}
             onPlaySummary={onPlaySummary}
             onViewTranscript={onViewTranscript}
+            onExportMarkdown={onExportMarkdown}
             onDelete={onDeleteSession}
             onReconnect={onReconnect}
             selectedId={selectedSessionId}

@@ -14,6 +14,19 @@
 
 ---
 
+## [0.3.3] - 2025-12-16
+
+### Added
+- **Export to Markdown**: Download session transcripts as `.md` files
+  - Export button in History drawer (yellow download icon)
+  - Includes session metadata (date, duration, host info)
+  - Includes all AI summaries (Brief, Standard, Detailed)
+  - Includes raw terminal transcript in code block
+  - Auto-generated filename with date and host info
+  - Toast notifications for export status
+
+---
+
 ## [0.3.2] - 2025-12-16
 
 ### Added
@@ -271,7 +284,6 @@
 
 ### Planned
 - Custom voice profiles
-- Export transcripts to markdown
 - Split pane view (native side-by-side terminals)
 
 ### Future
@@ -280,6 +292,7 @@
 - Plugin system for custom narrators
 
 ### Completed
+- ✅ Export transcripts to markdown (v0.3.3)
 - ✅ Keyboard shortcuts (v0.3.2)
 - ✅ Multiple terminal tabs support (v0.3.0)
 - ✅ Split terminal setup guide (v0.3.0)

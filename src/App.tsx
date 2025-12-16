@@ -18,6 +18,7 @@ import { useKeyboardShortcuts, type KeyboardShortcutActions } from './hooks/useK
 import { socket, BACKEND_URL } from './lib/socket';
 import { useToast } from './components/Toast';
 import { loadSavedTheme, applyTheme, type Theme } from './lib/themes';
+import { sessionToMarkdown, downloadMarkdown, generateFilename } from './lib/exportMarkdown';
 import type { SSHPreset } from './lib/sshPresets';
 
 type DetailLevel = 'high' | 'medium' | 'detailed';
@@ -376,6 +377,23 @@ function App() {
     [getSession, toast]
   );
 
+  // Export session to markdown
+  const handleExportMarkdown = useCallback(
+    async (session: Session) => {
+      try {
+        toast.info('Preparing export...');
+        const sessionData = await getSession(session.id);
+        const markdown = sessionToMarkdown(session, sessionData?.transcript || null);
+        const filename = generateFilename(session);
+        downloadMarkdown(markdown, filename);
+        toast.success(`Exported to ${filename}`);
+      } catch {
+        toast.error('Failed to export session');
+      }
+    },
+    [getSession, toast]
+  );
+
   // Reconnect to tmux session from history
   const handleReconnect = useCallback(
     (session: Session) => {
@@ -575,6 +593,7 @@ function App() {
           onAutoPlay={handleAutoPlay}
           onPlaySummary={handlePlaySummary}
           onViewTranscript={handleViewTranscript}
+          onExportMarkdown={handleExportMarkdown}
           onDeleteSession={deleteSession}
           onReconnect={handleReconnect}
           selectedSessionId={selectedSession?.id ?? null}
