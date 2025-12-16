@@ -79,10 +79,10 @@ export function SideDrawer({
         </button>
       </div>
 
-      {/* Content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Narration Panel - compact at top */}
-        <div className="p-3 border-b border-theme bg-theme-secondary/50 shrink-0">
+      {/* Content - scrollable on mobile */}
+      <div className="flex flex-col flex-1 overflow-y-auto sm:overflow-hidden">
+        {/* Narration Panel - scrollable section with max height */}
+        <div className="p-3 border-b border-theme bg-theme-secondary/50 max-h-[60vh] sm:max-h-[50%] overflow-y-auto">
           <NarrationPanel
             summary={summary}
             summaryLevel={summaryLevel}
@@ -96,7 +96,7 @@ export function SideDrawer({
         </div>
 
         {/* History List - scrollable */}
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 min-h-[200px] overflow-y-auto p-3">
           <TranscriptList
             sessions={sessions}
             loading={sessionsLoading}

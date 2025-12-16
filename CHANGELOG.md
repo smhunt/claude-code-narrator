@@ -41,6 +41,7 @@
 - Fixed terminal sizing issue where prompt was cut off at bottom
 - Fixed infinite React render loop in terminal mount/unmount logic
 - Fixed quick command buttons (ls, pwd, clear, exit) not working due to stale closure bug
+- Fixed History drawer narration content getting cut off on mobile (added max-height and scroll)
 
 ---
 
