@@ -425,11 +425,11 @@ function App() {
       />
 
       {/* Main Content: Terminal + Side Drawer */}
-      <main className="flex-1 flex min-h-0">
+      <main className="flex-1 flex min-h-0 overflow-hidden">
         {/* Terminal Area */}
-        <div className="flex-1 flex flex-col min-h-0 p-2 sm:p-3 gap-2">
+        <div className="flex-1 flex flex-col min-h-0 max-h-full p-2 sm:p-3 gap-2 overflow-hidden">
           {/* Terminal */}
-          <div className="flex-1 min-h-0" data-tour="terminal">
+          <div className="flex-1 min-h-0 max-h-full overflow-hidden" data-tour="terminal">
             <MultiTerminal
               sessions={terminalSessions}
               activeSessionId={activeSessionId}

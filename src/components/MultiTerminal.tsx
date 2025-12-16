@@ -38,22 +38,27 @@ export function MultiTerminal({
     };
   }, [sessions, onUnmount]);
 
-  // Force fit when switching tabs
+  // Force fit when switching tabs - only depends on activeSessionId
+  // The fit is also handled by setActiveSession, but this ensures
+  // fit happens after any layout changes from tab switching
+  const lastActiveIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (activeSessionId) {
+    if (activeSessionId && activeSessionId !== lastActiveIdRef.current) {
+      lastActiveIdRef.current = activeSessionId;
       const session = sessions.find(s => s.id === activeSessionId);
       if (session?.fitAddon && session?.containerRef) {
-        requestAnimationFrame(() => {
+        // Delay fit to allow layout to settle
+        setTimeout(() => {
           try {
             session.fitAddon?.fit();
             session.terminal?.focus();
           } catch (e) {
             // Ignore errors
           }
-        });
+        }, 100);
       }
     }
-  }, [activeSessionId, sessions]);
+  }, [activeSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (sessions.length === 0) {
     return (
@@ -70,27 +75,25 @@ export function MultiTerminal({
   }
 
   return (
-    <div className="h-full bg-[#1a1b26] rounded-lg overflow-hidden border border-gray-700 relative">
-      {sessions.map((session) => (
-        <div
-          key={session.id}
-          ref={(el) => {
-            if (el) {
-              containerRefs.current.set(session.id, el);
-              // Mount immediately if this is the active session
-              if (session.id === activeSessionId && !session.terminal) {
-                onMount(session.id, el);
+    <div className="h-full max-h-full bg-[#1a1b26] rounded-lg overflow-hidden border border-gray-700 p-2">
+      <div className="relative h-full w-full overflow-hidden">
+        {sessions.map((session) => (
+          <div
+            key={session.id}
+            ref={(el) => {
+              if (el) {
+                containerRefs.current.set(session.id, el);
+              } else {
+                containerRefs.current.delete(session.id);
               }
-            } else {
-              containerRefs.current.delete(session.id);
-            }
-          }}
-          className={`absolute inset-0 p-2 ${
-            session.id === activeSessionId ? 'visible' : 'invisible'
-          }`}
-          style={{ zIndex: session.id === activeSessionId ? 1 : 0 }}
-        />
-      ))}
+            }}
+            className={`absolute inset-0 overflow-hidden ${
+              session.id === activeSessionId ? 'visible' : 'invisible'
+            }`}
+            style={{ zIndex: session.id === activeSessionId ? 1 : 0 }}
+          />
+        ))}
+      </div>
     </div>
   );
 }

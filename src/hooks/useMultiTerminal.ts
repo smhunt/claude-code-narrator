@@ -56,6 +56,10 @@ export function useMultiTerminal(): UseMultiTerminalReturn {
     startedHandler: (data: { id: string; type: string; sshHost?: string }) => void;
   }>>(new Map());
 
+  // Ref to access current sessions in callbacks without stale closures
+  const sessionsRef = useRef<TerminalSession[]>([]);
+  sessionsRef.current = sessions;
+
   // Create terminal theme config
   const getTerminalConfig = () => {
     const isMobile = window.innerWidth < 768;
@@ -111,68 +115,80 @@ export function useMultiTerminal(): UseMultiTerminalReturn {
 
   // Mount terminal to container
   const mountTerminal = useCallback((tabId: string, container: HTMLDivElement) => {
-    setSessions(prev => prev.map(session => {
-      if (session.id !== tabId) return session;
+    // Check using ref first to avoid unnecessary state updates
+    const existingSession = sessionsRef.current.find(s => s.id === tabId);
+    if (!existingSession) return;
 
-      // Don't remount if already mounted
-      if (session.terminal && session.containerRef === container) {
-        return session;
-      }
+    // Don't remount if already mounted to the same container
+    if (existingSession.terminal && existingSession.containerRef === container) {
+      return;
+    }
 
-      // Create new terminal if needed
-      let terminal = session.terminal;
-      let fitAddon = session.fitAddon;
+    // Create new terminal if needed
+    let terminal = existingSession.terminal;
+    let fitAddon = existingSession.fitAddon;
 
-      if (!terminal) {
-        terminal = new Terminal(getTerminalConfig());
-        fitAddon = new FitAddon();
-        terminal.loadAddon(fitAddon);
-      }
+    if (!terminal) {
+      terminal = new Terminal(getTerminalConfig());
+      fitAddon = new FitAddon();
+      terminal.loadAddon(fitAddon);
+    }
 
-      // Open terminal in container
-      terminal.open(container);
+    // Open terminal in container
+    terminal.open(container);
 
-      // Fit after mount
-      requestAnimationFrame(() => {
-        try {
-          if (container.offsetWidth > 0) {
-            fitAddon?.fit();
-          }
-        } catch (e) {
-          // Ignore fit errors
+    // Fit after mount with multiple attempts to ensure proper sizing
+    const doFit = () => {
+      try {
+        if (container.offsetWidth > 0 && container.offsetHeight > 0) {
+          fitAddon?.fit();
+          terminal?.scrollToBottom();
         }
-      });
+      } catch (e) {
+        // Ignore fit errors
+      }
+    };
 
-      // Setup input handler
-      terminal.onData((data) => {
-        const currentSession = sessions.find(s => s.id === tabId);
-        if (currentSession?.sessionId) {
-          socket.emit('terminal:input', { data, sessionId: currentSession.sessionId });
-        }
-      });
+    // Multiple fit attempts to handle layout settling
+    requestAnimationFrame(doFit);
+    setTimeout(doFit, 50);
+    setTimeout(doFit, 150);
 
-      // Setup resize observer
-      const resizeObserver = new ResizeObserver(() => {
-        try {
-          if (container.offsetWidth > 0) {
-            fitAddon?.fit();
-            if (terminal?.cols && terminal?.rows) {
-              const currentSession = sessions.find(s => s.id === tabId);
-              if (currentSession?.sessionId) {
-                socket.emit('terminal:resize', {
-                  cols: terminal.cols,
-                  rows: terminal.rows,
-                  sessionId: currentSession.sessionId
-                });
-              }
+    // Setup input handler - use ref to avoid stale closure
+    terminal.onData((data) => {
+      const currentSession = sessionsRef.current.find(s => s.id === tabId);
+      if (currentSession?.sessionId) {
+        socket.emit('terminal:input', { data, sessionId: currentSession.sessionId });
+      }
+    });
+
+    // Setup resize observer - use ref to avoid stale closure
+    const resizeObserver = new ResizeObserver(() => {
+      try {
+        if (container.offsetWidth > 0 && container.offsetHeight > 0) {
+          fitAddon?.fit();
+          // Scroll to bottom after fit
+          terminal?.scrollToBottom();
+          if (terminal?.cols && terminal?.rows) {
+            const currentSession = sessionsRef.current.find(s => s.id === tabId);
+            if (currentSession?.sessionId) {
+              socket.emit('terminal:resize', {
+                cols: terminal.cols,
+                rows: terminal.rows,
+                sessionId: currentSession.sessionId
+              });
             }
           }
-        } catch (e) {
-          // Ignore errors
         }
-      });
-      resizeObserver.observe(container);
+      } catch (e) {
+        // Ignore errors
+      }
+    });
+    resizeObserver.observe(container);
 
+    // Now update state with the new terminal
+    setSessions(prev => prev.map(session => {
+      if (session.id !== tabId) return session;
       return {
         ...session,
         terminal,
@@ -180,7 +196,7 @@ export function useMultiTerminal(): UseMultiTerminalReturn {
         containerRef: container,
       };
     }));
-  }, [sessions]);
+  }, []); // No deps - uses sessionsRef for current state
 
   // Unmount terminal from container
   const unmountTerminal = useCallback((tabId: string) => {
@@ -342,21 +358,18 @@ export function useMultiTerminal(): UseMultiTerminalReturn {
   const setActiveSession = useCallback((id: string) => {
     setActiveSessionId(id);
 
-    // Focus the terminal and fit it
-    setSessions(prev => {
-      const session = prev.find(s => s.id === id);
-      if (session?.terminal && session.fitAddon && session.containerRef) {
-        requestAnimationFrame(() => {
-          try {
-            session.fitAddon?.fit();
-            session.terminal?.focus();
-          } catch (e) {
-            // Ignore errors
-          }
-        });
-      }
-      return prev;
-    });
+    // Focus the terminal and fit it using ref to avoid state updates
+    const session = sessionsRef.current.find(s => s.id === id);
+    if (session?.terminal && session.fitAddon && session.containerRef) {
+      requestAnimationFrame(() => {
+        try {
+          session.fitAddon?.fit();
+          session.terminal?.focus();
+        } catch (e) {
+          // Ignore errors
+        }
+      });
+    }
   }, []);
 
   // Get active session
