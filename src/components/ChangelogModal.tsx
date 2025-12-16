@@ -3,7 +3,7 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.3.1';
+const APP_VERSION = '0.3.2';
 
 const changelog = [
   {
@@ -154,10 +154,11 @@ const changelog = [
 ];
 
 const roadmap = [
-  { status: 'planned', item: 'Multiple terminal tabs support' },
+  { status: 'completed', item: 'Keyboard shortcuts (v0.3.2)' },
+  { status: 'completed', item: 'Multiple terminal tabs (v0.3.0)' },
   { status: 'planned', item: 'Custom voice profiles' },
   { status: 'planned', item: 'Export transcripts to markdown' },
-  { status: 'planned', item: 'Keyboard shortcuts' },
+  { status: 'planned', item: 'Split pane view' },
   { status: 'future', item: 'Team collaboration features' },
   { status: 'future', item: 'Cloud sync for transcripts' },
   { status: 'future', item: 'Plugin system for custom narrators' },
@@ -240,12 +241,14 @@ export function ChangelogModal({ isOpen, onClose }: ChangelogModalProps) {
                 >
                   <span
                     className={`px-2 py-0.5 text-xs rounded ${
-                      item.status === 'planned'
-                        ? 'bg-yellow-600/30 text-yellow-400'
-                        : 'bg-gray-600/30 text-gray-400'
+                      item.status === 'completed'
+                        ? 'bg-green-600/30 text-green-400'
+                        : item.status === 'planned'
+                          ? 'bg-yellow-600/30 text-yellow-400'
+                          : 'bg-gray-600/30 text-gray-400'
                     }`}
                   >
-                    {item.status === 'planned' ? 'Planned' : 'Future'}
+                    {item.status === 'completed' ? 'Done' : item.status === 'planned' ? 'Planned' : 'Future'}
                   </span>
                   <span className="text-sm text-gray-300">{item.item}</span>
                 </div>

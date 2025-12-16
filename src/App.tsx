@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MultiTerminal } from './components/MultiTerminal';
 import { SessionTabs } from './components/SessionTabs';
 import { QuickCommands } from './components/QuickCommands';
@@ -9,10 +9,12 @@ import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
 import { TranscriptModal } from './components/TranscriptModal';
 import { ProductTour } from './components/ProductTour';
 import { SplitTerminalGuide } from './components/SplitTerminalGuide';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { useMultiTerminal } from './hooks/useMultiTerminal';
 import { useTTS } from './hooks/useTTS';
 import { useTranscripts, type Session, type TranscriptData } from './hooks/useTranscripts';
 import { useTour } from './hooks/useTour';
+import { useKeyboardShortcuts, type KeyboardShortcutActions } from './hooks/useKeyboardShortcuts';
 import { socket, BACKEND_URL } from './lib/socket';
 import { useToast } from './components/Toast';
 import { loadSavedTheme, applyTheme, type Theme } from './lib/themes';
@@ -92,6 +94,7 @@ function App() {
   const [showDrawer, setShowDrawer] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [showSplitGuide, setShowSplitGuide] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [transcriptData, setTranscriptData] = useState<TranscriptData | null>(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptSessionId, setTranscriptSessionId] = useState<string | null>(null);
@@ -418,6 +421,83 @@ function App() {
     setShowSettings(false);
   }, [handleStartSSHSession]);
 
+  // Keyboard shortcut actions
+  const keyboardActions: KeyboardShortcutActions = useMemo(() => ({
+    newTab: () => {
+      createSession();
+    },
+    closeTab: () => {
+      if (activeSessionId) {
+        closeSession(activeSessionId);
+      }
+    },
+    nextTab: () => {
+      if (!activeSessionId || terminalSessions.length <= 1) return;
+      const currentIndex = terminalSessions.findIndex(s => s.id === activeSessionId);
+      const nextIndex = (currentIndex + 1) % terminalSessions.length;
+      setActiveSession(terminalSessions[nextIndex].id);
+    },
+    prevTab: () => {
+      if (!activeSessionId || terminalSessions.length <= 1) return;
+      const currentIndex = terminalSessions.findIndex(s => s.id === activeSessionId);
+      const prevIndex = (currentIndex - 1 + terminalSessions.length) % terminalSessions.length;
+      setActiveSession(terminalSessions[prevIndex].id);
+    },
+    goToTab: (index: number) => {
+      if (index >= 0 && index < terminalSessions.length) {
+        setActiveSession(terminalSessions[index].id);
+      }
+    },
+    togglePlayPause: () => {
+      if (isSpeaking) {
+        if (isPaused) {
+          resume();
+        } else {
+          pause();
+        }
+      } else if (currentSummary) {
+        speak(currentSummary);
+      }
+    },
+    stopPlayback: () => {
+      stop();
+    },
+    toggleSettings: () => {
+      setShowSettings(prev => !prev);
+    },
+    toggleHistory: () => {
+      setShowDrawer(prev => !prev);
+    },
+    showShortcutsHelp: () => {
+      setShowShortcuts(true);
+    },
+    focusTerminal: () => {
+      // Focus the active terminal
+      const session = terminalSessions.find(s => s.id === activeSessionId);
+      if (session?.terminal) {
+        session.terminal.focus();
+      }
+    },
+  }), [
+    activeSessionId,
+    terminalSessions,
+    createSession,
+    closeSession,
+    setActiveSession,
+    isSpeaking,
+    isPaused,
+    currentSummary,
+    speak,
+    pause,
+    resume,
+    stop,
+  ]);
+
+  // Register keyboard shortcuts
+  useKeyboardShortcuts(keyboardActions, {
+    enabled: !tourActive, // Disable during product tour
+  });
+
   return (
     <div className="h-screen max-h-screen bg-theme-primary text-theme-primary flex flex-col overflow-hidden">
       {/* App Header with controls */}
@@ -517,13 +597,22 @@ function App() {
         >
           v{APP_VERSION}
         </button>
-        <button
-          onClick={startTour}
-          className="hover:text-[var(--accent-primary)] transition-colors"
-          title="Start product tour"
-        >
-          Help
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowShortcuts(true)}
+            className="hover:text-[var(--accent-primary)] transition-colors px-1.5 py-0.5 bg-theme-secondary rounded text-[10px] font-mono"
+            title="Keyboard shortcuts (Cmd+/)"
+          >
+            ?
+          </button>
+          <button
+            onClick={startTour}
+            className="hover:text-[var(--accent-primary)] transition-colors"
+            title="Start product tour"
+          >
+            Help
+          </button>
+        </div>
         <span className="hidden sm:inline">
           Powered by <span className="text-[var(--accent-primary)]">Ecoworks</span>
         </span>
@@ -560,6 +649,12 @@ function App() {
       <SplitTerminalGuide
         isOpen={showSplitGuide}
         onClose={() => setShowSplitGuide(false)}
+      />
+
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsModal
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
       />
 
       {/* Product Tour */}

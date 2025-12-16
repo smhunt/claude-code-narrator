@@ -14,6 +14,18 @@
 
 ---
 
+## [0.3.2] - 2025-12-16
+
+### Added
+- **Keyboard Shortcuts**: Full keyboard navigation support
+  - **Tab Management**: `Cmd/Ctrl+T` new tab, `Cmd/Ctrl+W` close tab, `Cmd/Ctrl+1-9` go to tab, `Cmd/Ctrl+Shift+[/]` prev/next tab
+  - **Playback**: `Space` play/pause, `Esc` stop playback
+  - **Navigation**: `Cmd/Ctrl+,` settings, `Cmd/Ctrl+Shift+H` history, `Cmd/Ctrl+`` focus terminal
+  - **Help**: `Cmd/Ctrl+/` or `?` shows keyboard shortcuts modal
+  - "?" button in footer for quick access to shortcuts help
+
+---
+
 ## [0.3.1] - 2025-12-16
 
 ### Added
@@ -260,7 +272,6 @@
 ### Planned
 - Custom voice profiles
 - Export transcripts to markdown
-- Keyboard shortcuts
 - Split pane view (native side-by-side terminals)
 
 ### Future
@@ -269,6 +280,7 @@
 - Plugin system for custom narrators
 
 ### Completed
+- ✅ Keyboard shortcuts (v0.3.2)
 - ✅ Multiple terminal tabs support (v0.3.0)
 - ✅ Split terminal setup guide (v0.3.0)
 - ✅ Tmux session detection and reconnect (v0.3.0)
