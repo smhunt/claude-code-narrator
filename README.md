@@ -13,12 +13,14 @@ Claude Code Narrator captures terminal sessions and provides AI-generated audio 
 
 ## Features
 
+- **Multi-Terminal Tabs** - Browser-style horizontal tabs for managing multiple terminal sessions
 - **Terminal Capture** - Full-featured xterm.js terminal with real-time session recording
 - **Local & SSH Sessions** - Connect to local shell or remote machines via SSH
+- **Split Terminal Guide** - Built-in guide for setting up side-by-side terminal windows
 - **AI Summarization** - Claude API generates summaries at three detail levels (Brief, Standard, Detailed)
-- **Text-to-Speech** - Browser-native voice synthesis with customizable voice, speed, and pitch
+- **Text-to-Speech** - Browser-native and OpenAI TTS with customizable voice, speed, and pitch
 - **Session History** - Persistent storage of all sessions with transcript replay
-- **Dark Theme** - Tokyo Night-inspired terminal styling
+- **Themes** - 10 color themes including Tokyo Night, Dracula, Nord, and more
 
 ## Quick Start
 
@@ -70,7 +72,7 @@ Example: If your LAN IP is `10.10.10.24`, access at `http://10.10.10.24:3006`
 
 ## Version
 
-Current: **v0.2.0**
+Current: **v0.3.0**
 
 Click the version number in the app footer to view the full changelog and roadmap.
 

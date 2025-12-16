@@ -14,7 +14,7 @@
 
 ---
 
-## [0.3.0] - 2025-12-15
+## [0.3.0] - 2025-12-16
 
 ### Added
 - **Horizontal Session Tabs** (Termius-style): Browser-like tab bar for multiple terminal sessions
@@ -27,10 +27,19 @@
   - `useMultiTerminal` hook for session state management
   - `MultiTerminal` component for rendering active terminal
   - `SessionTabs` component for the tab bar UI
+- **Split Terminal Setup Guide**: New modal with step-by-step instructions
+  - Accessible via columns icon button in session tabs bar
+  - Instructions for creating multiple terminal tabs
+  - macOS Split View and Windows Snap tutorials
+  - Pro tips for efficient terminal management
 
 ### Changed
 - Refactored from single-session to multi-session terminal architecture
 - Terminal sessions now persist when switching between tabs
+
+### Fixed
+- Fixed terminal sizing issue where prompt was cut off at bottom
+- Fixed infinite React render loop in terminal mount/unmount logic
 
 ---
 
@@ -231,15 +240,19 @@
 ## Roadmap
 
 ### Planned
-- Multiple terminal tabs support
 - Custom voice profiles
 - Export transcripts to markdown
 - Keyboard shortcuts
+- Split pane view (native side-by-side terminals)
 
 ### Future
 - Team collaboration features
 - Cloud sync for transcripts
 - Plugin system for custom narrators
+
+### Completed
+- ✅ Multiple terminal tabs support (v0.3.0)
+- ✅ Split terminal setup guide (v0.3.0)
 
 ---
 
