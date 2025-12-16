@@ -14,6 +14,16 @@
 
 ---
 
+## [0.3.1] - 2025-12-16
+
+### Added
+- **Double-Click Tab Rename**: Rename terminal tabs by double-clicking on the label
+  - Inline text input appears with current name selected
+  - Press Enter to save, Escape to cancel
+  - Useful for giving meaningful names to SSH connections
+
+---
+
 ## [0.3.0] - 2025-12-16
 
 ### Added

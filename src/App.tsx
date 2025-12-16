@@ -27,6 +27,7 @@ function App() {
     setActiveSession,
     createSession,
     closeSession,
+    renameSession,
     startLocalSession,
     startSSHSession,
     endSession,
@@ -456,6 +457,7 @@ function App() {
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSession}
         onCloseSession={closeSession}
+        onRenameSession={renameSession}
         onNewSession={handleNewSession}
         onOpenSplitGuide={() => setShowSplitGuide(true)}
       />

@@ -35,6 +35,7 @@ export interface UseMultiTerminalReturn {
   setActiveSession: (id: string) => void;
   createSession: () => string;
   closeSession: (id: string) => void;
+  renameSession: (tabId: string, newLabel: string) => void;
   startLocalSession: (tabId: string, config?: LocalConfig) => Promise<void>;
   startSSHSession: (tabId: string, config: SSHConfig) => Promise<void>;
   endSession: (tabId: string) => void;
@@ -240,6 +241,14 @@ export function useMultiTerminal(): UseMultiTerminalReturn {
     }
   }, [sessions, activeSessionId]);
 
+  // Rename a session tab
+  const renameSession = useCallback((tabId: string, newLabel: string) => {
+    if (!newLabel.trim()) return;
+    setSessions(prev => prev.map(s =>
+      s.id === tabId ? { ...s, label: newLabel.trim() } : s
+    ));
+  }, []);
+
   // Setup socket handlers for a session
   const setupSocketHandlers = useCallback((tabId: string) => {
     // Remove existing handlers if any
@@ -383,6 +392,7 @@ export function useMultiTerminal(): UseMultiTerminalReturn {
     setActiveSession,
     createSession,
     closeSession,
+    renameSession,
     startLocalSession,
     startSSHSession,
     endSession,

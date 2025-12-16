@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import type { TerminalSession } from '../hooks/useMultiTerminal';
 
 interface SessionTabsProps {
@@ -5,6 +6,7 @@ interface SessionTabsProps {
   activeSessionId: string | null;
   onSelectSession: (id: string) => void;
   onCloseSession: (id: string) => void;
+  onRenameSession: (id: string, newLabel: string) => void;
   onNewSession: () => void;
   onOpenSplitGuide?: () => void;
 }
@@ -14,9 +16,42 @@ export function SessionTabs({
   activeSessionId,
   onSelectSession,
   onCloseSession,
+  onRenameSession,
   onNewSession,
   onOpenSplitGuide,
 }: SessionTabsProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editingId && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingId]);
+
+  const handleDoubleClick = (session: TerminalSession) => {
+    setEditingId(session.id);
+    setEditValue(session.label);
+  };
+
+  const handleRenameSubmit = (id: string) => {
+    if (editValue.trim()) {
+      onRenameSession(id, editValue.trim());
+    }
+    setEditingId(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, id: string) => {
+    if (e.key === 'Enter') {
+      handleRenameSubmit(id);
+    } else if (e.key === 'Escape') {
+      setEditingId(null);
+    }
+  };
+
   if (sessions.length === 0) {
     return (
       <div className="flex items-center gap-2 px-2 py-1 bg-theme-secondary border-b border-theme">
@@ -60,6 +95,8 @@ export function SessionTabs({
                 : 'bg-theme-tertiary/50 text-theme-secondary hover:bg-theme-tertiary hover:text-theme-primary'
             }`}
             onClick={() => onSelectSession(session.id)}
+            onDoubleClick={() => handleDoubleClick(session)}
+            title="Double-click to rename"
           >
             {/* Connection status dot */}
             <span
@@ -75,8 +112,21 @@ export function SessionTabs({
             {/* Type icon */}
             {typeIcon}
 
-            {/* Label */}
-            <span className="truncate max-w-[120px]">{session.label}</span>
+            {/* Label - editable */}
+            {editingId === session.id ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={() => handleRenameSubmit(session.id)}
+                onKeyDown={(e) => handleKeyDown(e, session.id)}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-theme-tertiary text-theme-primary px-1 py-0 text-sm rounded border border-[var(--accent-primary)] outline-none w-24"
+              />
+            ) : (
+              <span className="truncate max-w-[120px]">{session.label}</span>
+            )}
 
             {/* Close button */}
             <button
