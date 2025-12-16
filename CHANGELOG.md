@@ -14,6 +14,26 @@
 
 ---
 
+## [0.3.0] - 2025-12-15
+
+### Added
+- **Horizontal Session Tabs** (Termius-style): Browser-like tab bar for multiple terminal sessions
+  - Tab bar below header with connection status indicator (green dot = connected)
+  - Session type icon (terminal for local, server for SSH)
+  - Close button on each tab (appears on hover for inactive tabs)
+  - "+" button to create new terminal tabs
+  - Tab labels auto-update to show host name for SSH connections
+- **Multi-Terminal Architecture**: New hooks and components for managing multiple sessions
+  - `useMultiTerminal` hook for session state management
+  - `MultiTerminal` component for rendering active terminal
+  - `SessionTabs` component for the tab bar UI
+
+### Changed
+- Refactored from single-session to multi-session terminal architecture
+- Terminal sessions now persist when switching between tabs
+
+---
+
 ## [0.2.4] - 2025-12-13
 
 ### Added
