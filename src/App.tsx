@@ -8,6 +8,7 @@ import { SideDrawer } from './components/SideDrawer';
 import { ChangelogModal, APP_VERSION } from './components/ChangelogModal';
 import { TranscriptModal } from './components/TranscriptModal';
 import { ProductTour } from './components/ProductTour';
+import { SplitTerminalGuide } from './components/SplitTerminalGuide';
 import { useMultiTerminal } from './hooks/useMultiTerminal';
 import { useTTS } from './hooks/useTTS';
 import { useTranscripts, type Session, type TranscriptData } from './hooks/useTranscripts';
@@ -89,6 +90,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [showSplitGuide, setShowSplitGuide] = useState(false);
   const [transcriptData, setTranscriptData] = useState<TranscriptData | null>(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptSessionId, setTranscriptSessionId] = useState<string | null>(null);
@@ -422,6 +424,7 @@ function App() {
         onSelectSession={setActiveSession}
         onCloseSession={closeSession}
         onNewSession={handleNewSession}
+        onOpenSplitGuide={() => setShowSplitGuide(true)}
       />
 
       {/* Main Content: Terminal + Side Drawer */}
@@ -515,6 +518,12 @@ function App() {
         transcript={transcriptData}
         sessionId={transcriptSessionId}
         isLoading={transcriptLoading}
+      />
+
+      {/* Split Terminal Guide */}
+      <SplitTerminalGuide
+        isOpen={showSplitGuide}
+        onClose={() => setShowSplitGuide(false)}
       />
 
       {/* Product Tour */}
