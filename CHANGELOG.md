@@ -14,6 +14,20 @@
 
 ---
 
+## [0.3.4] - 2025-12-16
+
+### Added
+- **Custom Voice Profiles**: Save and manage voice settings presets
+  - Profile dropdown to quickly switch between saved voice configurations
+  - "Save as New" to create profiles from current settings
+  - "Update" to save current settings to active profile
+  - Rename and delete profiles inline
+  - 3 default profiles included: Natural, Fast Reader, Slow & Clear
+  - Click any profile name to instantly load it
+  - Profiles persist to localStorage
+
+---
+
 ## [0.3.3] - 2025-12-16
 
 ### Added
@@ -283,7 +297,6 @@
 ## Roadmap
 
 ### Planned
-- Custom voice profiles
 - Split pane view (native side-by-side terminals)
 
 ### Future
@@ -292,6 +305,7 @@
 - Plugin system for custom narrators
 
 ### Completed
+- ✅ Custom voice profiles (v0.3.4)
 - ✅ Export transcripts to markdown (v0.3.3)
 - ✅ Keyboard shortcuts (v0.3.2)
 - ✅ Multiple terminal tabs support (v0.3.0)

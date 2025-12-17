@@ -72,7 +72,7 @@ Example: If your LAN IP is `10.10.10.24`, access at `http://10.10.10.24:3006`
 
 ## Version
 
-Current: **v0.3.3**
+Current: **v0.3.4**
 
 Click the version number in the app footer to view the full changelog and roadmap.
 

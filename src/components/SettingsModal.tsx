@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { TTSSettings, OpenAIVoice } from '../hooks/useTTS';
 import { OPENAI_VOICES } from '../hooks/useTTS';
+import type { VoiceProfile } from '../hooks/useVoiceProfiles';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import type { Theme } from '../lib/themes';
 import { loadSSHPresets, saveSSHPresets, type SSHPreset } from '../lib/sshPresets';
@@ -15,6 +16,14 @@ interface SettingsModalProps {
   voices: SpeechSynthesisVoice[];
   ttsLoading: boolean;
   openaiAvailable: boolean;
+  // Voice Profiles
+  voiceProfiles: VoiceProfile[];
+  activeProfileId: string | null;
+  onSaveProfile: (name: string) => void;
+  onLoadProfile: (id: string) => void;
+  onDeleteProfile: (id: string) => void;
+  onUpdateProfile: (id: string) => void;
+  onRenameProfile: (id: string, newName: string) => void;
   // Theme
   currentTheme: Theme;
   onThemeChange: (theme: Theme) => void;
@@ -31,6 +40,13 @@ export function SettingsModal({
   voices,
   ttsLoading,
   openaiAvailable,
+  voiceProfiles,
+  activeProfileId,
+  onSaveProfile,
+  onLoadProfile,
+  onDeleteProfile,
+  onUpdateProfile,
+  onRenameProfile,
   currentTheme,
   onThemeChange,
   onConnectPreset,
@@ -40,6 +56,10 @@ export function SettingsModal({
   const [editingPreset, setEditingPreset] = useState<SSHPreset | null>(null);
   const [directories, setDirectories] = useState<string[]>(['~/Code']);
   const [showDirDropdown, setShowDirDropdown] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('');
+  const [showSaveProfile, setShowSaveProfile] = useState(false);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+  const [editingProfileName, setEditingProfileName] = useState('');
 
   // Load presets and directories when modal opens
   useEffect(() => {
@@ -127,6 +147,181 @@ export function SettingsModal({
 
         {/* Content */}
         <div className="p-3 overflow-y-auto h-[calc(100%-56px)] space-y-5">
+          {/* Voice Profiles Section */}
+          <section>
+            <h3 className="text-sm font-semibold text-theme-primary mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+              Voice Profiles
+            </h3>
+
+            <div className="space-y-3">
+              {/* Profile Selector */}
+              <div className="space-y-2">
+                <label className="block text-xs text-theme-muted">Active Profile</label>
+                <select
+                  value={activeProfileId || ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      onLoadProfile(e.target.value);
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-theme-tertiary text-theme-primary rounded-lg text-sm border border-theme"
+                >
+                  <option value="">Custom (unsaved)</option>
+                  {voiceProfiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Profile Actions */}
+              <div className="flex gap-2 flex-wrap">
+                {!showSaveProfile ? (
+                  <button
+                    onClick={() => setShowSaveProfile(true)}
+                    className="px-2 py-1 text-xs bg-theme-tertiary text-theme-secondary hover:text-theme-primary rounded flex items-center gap-1"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Save as New
+                  </button>
+                ) : (
+                  <div className="flex gap-2 w-full">
+                    <input
+                      type="text"
+                      value={newProfileName}
+                      onChange={(e) => setNewProfileName(e.target.value)}
+                      placeholder="Profile name..."
+                      className="flex-1 px-2 py-1 bg-theme-primary text-theme-primary rounded text-sm border border-theme"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newProfileName.trim()) {
+                          onSaveProfile(newProfileName);
+                          setNewProfileName('');
+                          setShowSaveProfile(false);
+                        } else if (e.key === 'Escape') {
+                          setShowSaveProfile(false);
+                          setNewProfileName('');
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => {
+                        if (newProfileName.trim()) {
+                          onSaveProfile(newProfileName);
+                          setNewProfileName('');
+                          setShowSaveProfile(false);
+                        }
+                      }}
+                      disabled={!newProfileName.trim()}
+                      className="px-2 py-1 text-xs btn-accent rounded disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSaveProfile(false);
+                        setNewProfileName('');
+                      }}
+                      className="px-2 py-1 text-xs bg-theme-tertiary text-theme-secondary rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+                {activeProfileId && !showSaveProfile && (
+                  <>
+                    <button
+                      onClick={() => onUpdateProfile(activeProfileId)}
+                      className="px-2 py-1 text-xs bg-theme-tertiary text-theme-secondary hover:text-theme-primary rounded flex items-center gap-1"
+                      title="Update current profile with these settings"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      Update
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Profile List for Edit/Delete */}
+              {voiceProfiles.length > 0 && (
+                <div className="space-y-1">
+                  <label className="block text-xs text-theme-muted">Manage Profiles</label>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {voiceProfiles.map((profile) => (
+                      <div
+                        key={profile.id}
+                        className={`flex items-center justify-between px-2 py-1.5 rounded text-sm ${
+                          activeProfileId === profile.id ? 'bg-[var(--accent-primary)]/20' : 'bg-theme-tertiary'
+                        }`}
+                      >
+                        {editingProfileId === profile.id ? (
+                          <input
+                            type="text"
+                            value={editingProfileName}
+                            onChange={(e) => setEditingProfileName(e.target.value)}
+                            className="flex-1 px-1 py-0.5 bg-theme-primary text-theme-primary rounded text-xs border border-theme mr-2"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                onRenameProfile(profile.id, editingProfileName);
+                                setEditingProfileId(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingProfileId(null);
+                              }
+                            }}
+                            onBlur={() => {
+                              onRenameProfile(profile.id, editingProfileName);
+                              setEditingProfileId(null);
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className="flex-1 text-theme-primary text-xs truncate cursor-pointer hover:text-[var(--accent-primary)]"
+                            onClick={() => onLoadProfile(profile.id)}
+                            title="Click to load this profile"
+                          >
+                            {profile.name}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingProfileId(profile.id);
+                              setEditingProfileName(profile.name);
+                            }}
+                            className="p-1 text-theme-muted hover:text-theme-primary"
+                            title="Rename"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => onDeleteProfile(profile.id)}
+                            className="p-1 text-theme-muted hover:text-red-400"
+                            title="Delete"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* Voice Settings Section */}
           <section>
             <h3 className="text-sm font-semibold text-theme-primary mb-3 flex items-center gap-2">

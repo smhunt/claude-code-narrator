@@ -15,6 +15,7 @@ import { useTTS } from './hooks/useTTS';
 import { useTranscripts, type Session, type TranscriptData } from './hooks/useTranscripts';
 import { useTour } from './hooks/useTour';
 import { useKeyboardShortcuts, type KeyboardShortcutActions } from './hooks/useKeyboardShortcuts';
+import { useVoiceProfiles } from './hooks/useVoiceProfiles';
 import { socket, BACKEND_URL } from './lib/socket';
 import { useToast } from './components/Toast';
 import { loadSavedTheme, applyTheme, type Theme } from './lib/themes';
@@ -67,6 +68,17 @@ function App() {
   } = useTranscripts();
 
   const toast = useToast();
+
+  const {
+    profiles: voiceProfiles,
+    activeProfileId,
+    saveProfile,
+    loadProfile,
+    deleteProfile,
+    renameProfile,
+    updateProfile,
+    setActiveProfile,
+  } = useVoiceProfiles();
 
   const {
     isActive: tourActive,
@@ -427,6 +439,35 @@ function App() {
     [createSession, startSSHSession, startLocalSession, toast]
   );
 
+  // Voice profile handlers
+  const handleSaveVoiceProfile = useCallback((name: string) => {
+    const profile = saveProfile(name, ttsSettings);
+    setActiveProfile(profile.id);
+    toast.success(`Profile "${name}" saved`);
+  }, [saveProfile, ttsSettings, setActiveProfile, toast]);
+
+  const handleLoadVoiceProfile = useCallback((id: string) => {
+    const settings = loadProfile(id);
+    if (settings) {
+      updateTTSSettings(settings);
+      setActiveProfile(id);
+    }
+  }, [loadProfile, updateTTSSettings, setActiveProfile]);
+
+  const handleDeleteVoiceProfile = useCallback((id: string) => {
+    deleteProfile(id);
+    toast.info('Profile deleted');
+  }, [deleteProfile, toast]);
+
+  const handleUpdateVoiceProfile = useCallback((id: string) => {
+    updateProfile(id, ttsSettings);
+    toast.success('Profile updated');
+  }, [updateProfile, ttsSettings, toast]);
+
+  const handleRenameVoiceProfile = useCallback((id: string, newName: string) => {
+    renameProfile(id, newName);
+  }, [renameProfile]);
+
   // Connect via preset and auto-focus terminal
   const handleConnectPreset = useCallback((preset: SSHPreset) => {
     handleStartSSHSession({
@@ -646,6 +687,13 @@ function App() {
         voices={voices}
         ttsLoading={ttsLoading}
         openaiAvailable={openaiAvailable}
+        voiceProfiles={voiceProfiles}
+        activeProfileId={activeProfileId}
+        onSaveProfile={handleSaveVoiceProfile}
+        onLoadProfile={handleLoadVoiceProfile}
+        onDeleteProfile={handleDeleteVoiceProfile}
+        onUpdateProfile={handleUpdateVoiceProfile}
+        onRenameProfile={handleRenameVoiceProfile}
         currentTheme={theme}
         onThemeChange={handleThemeChange}
         onConnectPreset={handleConnectPreset}
