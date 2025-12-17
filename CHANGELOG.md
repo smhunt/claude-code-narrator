@@ -14,6 +14,21 @@
 
 ---
 
+## [0.3.5] - 2025-12-16
+
+### Added
+- **Split Pane View**: Native side-by-side terminals in the app
+  - Split horizontally (side by side) or vertically (stacked)
+  - Resizable panes with drag handle
+  - Each pane can show a different terminal session
+  - Click pane to focus, select terminal from dropdown
+  - Swap panes button to flip left/right or top/bottom
+  - Toggle split direction on the fly
+  - Exit split mode to return to single terminal view
+  - Layout persists to localStorage
+
+---
+
 ## [0.3.4] - 2025-12-16
 
 ### Added
@@ -297,7 +312,7 @@
 ## Roadmap
 
 ### Planned
-- Split pane view (native side-by-side terminals)
+- (All planned features completed!)
 
 ### Future
 - Team collaboration features
@@ -305,6 +320,7 @@
 - Plugin system for custom narrators
 
 ### Completed
+- ✅ Split pane view (v0.3.5)
 - ✅ Custom voice profiles (v0.3.4)
 - ✅ Export transcripts to markdown (v0.3.3)
 - ✅ Keyboard shortcuts (v0.3.2)

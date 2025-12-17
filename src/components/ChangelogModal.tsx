@@ -3,9 +3,21 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
-const APP_VERSION = '0.3.4';
+const APP_VERSION = '0.3.5';
 
 const changelog = [
+  {
+    version: '0.3.5',
+    date: '2025-12-16',
+    changes: [
+      'Split Pane View: Native side-by-side terminals in the app',
+      'Split horizontally (side by side) or vertically (stacked)',
+      'Resizable panes with drag handle',
+      'Click pane to focus, select terminal from dropdown',
+      'Swap panes, toggle direction, exit split mode',
+      'Layout persists to localStorage',
+    ],
+  },
   {
     version: '0.3.0',
     date: '2025-12-13',
@@ -154,11 +166,11 @@ const changelog = [
 ];
 
 const roadmap = [
+  { status: 'completed', item: 'Split pane view (v0.3.5)' },
   { status: 'completed', item: 'Custom voice profiles (v0.3.4)' },
   { status: 'completed', item: 'Export to Markdown (v0.3.3)' },
   { status: 'completed', item: 'Keyboard shortcuts (v0.3.2)' },
   { status: 'completed', item: 'Multiple terminal tabs (v0.3.0)' },
-  { status: 'planned', item: 'Split pane view' },
   { status: 'future', item: 'Team collaboration features' },
   { status: 'future', item: 'Cloud sync for transcripts' },
   { status: 'future', item: 'Plugin system for custom narrators' },

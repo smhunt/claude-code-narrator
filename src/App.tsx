@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { MultiTerminal } from './components/MultiTerminal';
+import { SplitPaneTerminals } from './components/SplitPaneTerminals';
 import { SessionTabs } from './components/SessionTabs';
+import { useSplitLayout } from './hooks/useSplitLayout';
 import { QuickCommands } from './components/QuickCommands';
 import { AppHeader } from './components/AppHeader';
 import { SettingsModal } from './components/SettingsModal';
@@ -79,6 +80,19 @@ function App() {
     updateProfile,
     setActiveProfile,
   } = useVoiceProfiles();
+
+  // Split pane layout
+  const {
+    layout: splitLayout,
+    isSplit,
+    enableSplit,
+    disableSplit,
+    setPrimaryPane,
+    setSecondaryPane,
+    swapPanes,
+    setFocusedPane,
+    setSizes,
+  } = useSplitLayout(activeSessionId);
 
   const {
     isActive: tourActive,
@@ -439,6 +453,30 @@ function App() {
     [createSession, startSSHSession, startLocalSession, toast]
   );
 
+  // Split pane handlers
+  const handleSplitHorizontal = useCallback(() => {
+    enableSplit('horizontal', activeSessionId || terminalSessions[0]?.id || '', null);
+  }, [enableSplit, activeSessionId, terminalSessions]);
+
+  const handleSplitVertical = useCallback(() => {
+    enableSplit('vertical', activeSessionId || terminalSessions[0]?.id || '', null);
+  }, [enableSplit, activeSessionId, terminalSessions]);
+
+  const handleSelectTerminalForPane = useCallback((pane: 'primary' | 'secondary', terminalId: string) => {
+    if (pane === 'primary') {
+      setPrimaryPane(terminalId);
+    } else {
+      setSecondaryPane(terminalId);
+    }
+  }, [setPrimaryPane, setSecondaryPane]);
+
+  // Keep primary pane in sync with active session when not in split mode
+  useEffect(() => {
+    if (!isSplit && activeSessionId && splitLayout.primaryPaneId !== activeSessionId) {
+      setPrimaryPane(activeSessionId);
+    }
+  }, [isSplit, activeSessionId, splitLayout.primaryPaneId, setPrimaryPane]);
+
   // Voice profile handlers
   const handleSaveVoiceProfile = useCallback((name: string) => {
     const profile = saveProfile(name, ttsSettings);
@@ -599,6 +637,12 @@ function App() {
         onRenameSession={renameSession}
         onNewSession={handleNewSession}
         onOpenSplitGuide={() => setShowSplitGuide(true)}
+        isSplit={isSplit}
+        splitDirection={splitLayout.direction}
+        onSplitHorizontal={handleSplitHorizontal}
+        onSplitVertical={handleSplitVertical}
+        onExitSplit={disableSplit}
+        onSwapPanes={swapPanes}
       />
 
       {/* Main Content: Terminal + Side Drawer */}
@@ -607,11 +651,14 @@ function App() {
         <div className="flex-1 flex flex-col min-h-0 max-h-full p-2 sm:p-3 gap-2 overflow-hidden">
           {/* Terminal */}
           <div className="flex-1 min-h-0 max-h-full overflow-hidden" data-tour="terminal">
-            <MultiTerminal
+            <SplitPaneTerminals
               sessions={terminalSessions}
-              activeSessionId={activeSessionId}
+              layout={splitLayout}
               onMount={mountTerminal}
               onUnmount={unmountTerminal}
+              onFocusPane={setFocusedPane}
+              onSizesChange={setSizes}
+              onSelectTerminalForPane={handleSelectTerminalForPane}
             />
           </div>
 

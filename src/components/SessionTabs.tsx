@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { TerminalSession } from '../hooks/useMultiTerminal';
+import type { SplitDirection } from '../hooks/useSplitLayout';
 
 interface SessionTabsProps {
   sessions: TerminalSession[];
@@ -9,6 +10,13 @@ interface SessionTabsProps {
   onRenameSession: (id: string, newLabel: string) => void;
   onNewSession: () => void;
   onOpenSplitGuide?: () => void;
+  // Split controls
+  isSplit?: boolean;
+  splitDirection?: SplitDirection;
+  onSplitHorizontal?: () => void;
+  onSplitVertical?: () => void;
+  onExitSplit?: () => void;
+  onSwapPanes?: () => void;
 }
 
 export function SessionTabs({
@@ -19,6 +27,12 @@ export function SessionTabs({
   onRenameSession,
   onNewSession,
   onOpenSplitGuide,
+  isSplit = false,
+  splitDirection,
+  onSplitHorizontal,
+  onSplitVertical,
+  onExitSplit,
+  onSwapPanes,
 }: SessionTabsProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -158,18 +172,89 @@ export function SessionTabs({
         </svg>
       </button>
 
-      {/* Split View Guide button */}
-      {onOpenSplitGuide && (
-        <button
-          onClick={onOpenSplitGuide}
-          className="flex items-center justify-center w-7 h-7 rounded hover:bg-theme-tertiary text-theme-secondary hover:text-[var(--accent-primary)] transition-colors shrink-0 ml-auto"
-          title="Split terminal setup guide"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-          </svg>
-        </button>
-      )}
+      {/* Split Controls */}
+      <div className="flex items-center gap-1 ml-auto border-l border-theme pl-2">
+        {!isSplit ? (
+          <>
+            {/* Split Horizontal */}
+            {onSplitHorizontal && sessions.length >= 1 && (
+              <button
+                onClick={onSplitHorizontal}
+                className="flex items-center justify-center w-7 h-7 rounded hover:bg-theme-tertiary text-theme-secondary hover:text-[var(--accent-primary)] transition-colors shrink-0"
+                title="Split view horizontally (side by side)"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                </svg>
+              </button>
+            )}
+            {/* Split Vertical */}
+            {onSplitVertical && sessions.length >= 1 && (
+              <button
+                onClick={onSplitVertical}
+                className="flex items-center justify-center w-7 h-7 rounded hover:bg-theme-tertiary text-theme-secondary hover:text-[var(--accent-primary)] transition-colors shrink-0"
+                title="Split view vertically (stacked)"
+              >
+                <svg className="w-4 h-4 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                </svg>
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Swap Panes */}
+            {onSwapPanes && (
+              <button
+                onClick={onSwapPanes}
+                className="flex items-center justify-center w-7 h-7 rounded hover:bg-theme-tertiary text-theme-secondary hover:text-[var(--accent-primary)] transition-colors shrink-0"
+                title="Swap panes"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </button>
+            )}
+            {/* Toggle Direction */}
+            {onSplitHorizontal && onSplitVertical && (
+              <button
+                onClick={splitDirection === 'horizontal' ? onSplitVertical : onSplitHorizontal}
+                className="flex items-center justify-center w-7 h-7 rounded hover:bg-theme-tertiary text-theme-secondary hover:text-[var(--accent-primary)] transition-colors shrink-0"
+                title={splitDirection === 'horizontal' ? 'Switch to vertical split' : 'Switch to horizontal split'}
+              >
+                <svg className={`w-4 h-4 ${splitDirection === 'vertical' ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </button>
+            )}
+            {/* Exit Split */}
+            {onExitSplit && (
+              <button
+                onClick={onExitSplit}
+                className="flex items-center justify-center w-7 h-7 rounded hover:bg-red-500/20 text-theme-secondary hover:text-red-400 transition-colors shrink-0"
+                title="Exit split view"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Split View Guide button */}
+        {onOpenSplitGuide && (
+          <button
+            onClick={onOpenSplitGuide}
+            className="flex items-center justify-center w-7 h-7 rounded hover:bg-theme-tertiary text-theme-secondary hover:text-theme-muted transition-colors shrink-0"
+            title="Split terminal setup guide (external)"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
