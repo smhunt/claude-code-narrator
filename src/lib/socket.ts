@@ -1,8 +1,20 @@
 import { io, Socket } from 'socket.io-client';
 
-// Use same hostname as frontend, with backend port from env or default 3086
-const API_PORT = import.meta.env.VITE_API_PORT || '3086';
-const BACKEND_URL = `http://${window.location.hostname}:${API_PORT}`;
+// Detect Caddy subdomain access vs direct IP access
+function getBackendUrl(): string {
+  const hostname = window.location.hostname;
+
+  // If accessed via Caddy subdomain (narrator.dev.ecoworks.ca)
+  if (hostname === 'narrator.dev.ecoworks.ca') {
+    return 'https://api.narrator.dev.ecoworks.ca';
+  }
+
+  // Direct IP/localhost access - use port-based URL
+  const API_PORT = import.meta.env.VITE_API_PORT || '3086';
+  return `http://${hostname}:${API_PORT}`;
+}
+
+const BACKEND_URL = getBackendUrl();
 
 export { BACKEND_URL };
 

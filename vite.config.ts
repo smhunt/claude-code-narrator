@@ -9,9 +9,6 @@ export default defineConfig({
   server: {
     port: 3006,
     host: '0.0.0.0', // Allow LAN access
-    https: {
-      key: fs.readFileSync('./certs/key.pem'),
-      cert: fs.readFileSync('./certs/cert.pem'),
-    },
+    allowedHosts: ['.dev.ecoworks.ca', 'localhost'],
   },
 })

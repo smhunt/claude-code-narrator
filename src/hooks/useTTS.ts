@@ -72,7 +72,20 @@ function saveSettings(settings: TTSSettings): void {
   }
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3086`;
+// Detect Caddy subdomain access vs direct IP access
+function getApiBase(): string {
+  const hostname = window.location.hostname;
+
+  // If accessed via Caddy subdomain (narrator.dev.ecoworks.ca)
+  if (hostname === 'narrator.dev.ecoworks.ca') {
+    return 'https://api.narrator.dev.ecoworks.ca';
+  }
+
+  // Direct IP/localhost access - use port-based URL
+  return import.meta.env.VITE_API_URL || `http://${hostname}:3086`;
+}
+
+const API_BASE = getApiBase();
 
 export function useTTS(): UseTTSReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
